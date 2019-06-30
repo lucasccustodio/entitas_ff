@@ -20,6 +20,10 @@ abstract class CleanupSystem extends System {
   cleanup();
 }
 
+abstract class ExitSystem extends System {
+  exit();
+}
+
 /// An abstract class which user should implement if they want their systems to hold a reference to [EntityManager]
 abstract class EntityManagerSystem extends System {
   EntityManager __manager;
@@ -208,14 +212,16 @@ abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSys
 /// If a child is extending the [EntityManagerSystem] it will get the [EntityManager] instance injected.
 /// The children are devided into lists according to the interfaces they implement.
 /// When the root system is called as [InitSystem], it will delegate the call to it's children which also implement [InitSystem] interface.
-/// Same applies to [ExecuteSystem] and [CleanupSystem] calls and implementing children.
-class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem {
+/// Same applies to [ExecuteSystem], [CleanupSystem] and [ExitSystem] calls and implementing children.
+class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem {
   // holds reference to child systems which implement [InitSystem] interface
   final List<InitSystem> _initSystems = [];
   // holds reference to child systems which implement [ExecuteSystem] interface
   final List<ExecuteSystem> _executeSystems = [];
   // holds reference to child systems which implement [CleanupSystem] interface
   final List<CleanupSystem> _cleanupSystems = [];
+  // holds reference to child systems which implement [ExitSystem] interface
+  final List<ExitSystem> _exitSystems = [];
   // holds reference to [EntityManager] instance
   final EntityManager _entityManager;
 
@@ -232,6 +238,9 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem {
       }
       if (s is CleanupSystem) {
         _cleanupSystems.add(s);
+      }
+      if (s is ExitSystem){
+        _exitSystems.add(s);
       }
     }
   }
@@ -260,6 +269,15 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem {
   cleanup() {
     for (var s in _cleanupSystems) {
       s.cleanup();
+    }
+  }
+
+  /// Implementation of [ExitSystem]
+  /// Delegates the call to its children.
+  @override
+  exit() {
+    for (var s in _exitSystems){
+      s.exit();
     }
   }
 }

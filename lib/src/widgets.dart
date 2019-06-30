@@ -62,10 +62,10 @@ class _RootSystemWidgetState extends State<_RootSystemWidget> with SingleTickerP
     widget.systems.init();
   }
 
-
   @override
   void dispose() {
     _ticker.stop();
+    widget.systems.exit();
     super.dispose();
   }
 
@@ -73,7 +73,6 @@ class _RootSystemWidgetState extends State<_RootSystemWidget> with SingleTickerP
     widget.systems.execute();
     widget.systems.cleanup();
   }
-
 }
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
