@@ -4,7 +4,8 @@
 ### Introudce examples and small refactorings
 - Introduce `destroyAllEntities` method onGroup
 - Perfom small refactroings
-- Introudce more sophisicated example apps
+- Introduce more sophisicated example apps
+-Introduce the ExitSystem interface to call exit() when the application is terminated
 
 ## 0.1.0
 ### Initital commit
