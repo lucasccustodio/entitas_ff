@@ -112,6 +112,16 @@ class Entity {
     return _components.containsKey(T);
   }
 
+  /// Updates a given component on Entity if present and updateTo's result isn't `null`;
+  void update<T extends Component>(T updateTo(T prev)){
+    if (!hasT<T>()) return;
+
+    T oldComponent = get<T>();
+    T newComponent = updateTo(oldComponent);
+
+    var _ = this + (newComponent ?? oldComponent);
+  }
+
   /// Adds observer to the entity which will be notified on every mutating action.
   /// Observers are stored in a [Set].
   addObserver(EntityObserver o) {

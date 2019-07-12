@@ -1,11 +1,14 @@
 # Changelog
 
+## 0.1.1+1
+- Introduce the ExitSystem interface to call exit() when the application is terminated
+- Add an update component method for Entity
+
 ## 0.1.1
 ### Introudce examples and small refactorings
 - Introduce `destroyAllEntities` method onGroup
 - Perfom small refactroings
 - Introduce more sophisicated example apps
--Introduce the ExitSystem interface to call exit() when the application is terminated
 
 ## 0.1.0
 ### Initital commit
