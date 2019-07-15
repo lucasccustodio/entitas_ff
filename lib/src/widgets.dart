@@ -108,8 +108,6 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     implements EntityObserver {
   // holds reference to entity under observation
   Entity _entity;
-  // marks if `setState` was already called
-  var _isDirty = false;
 
   @override
   void didChangeDependencies() {
@@ -125,7 +123,6 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
 
   @override
   Widget build(BuildContext context) {
-    _isDirty = false;
     return widget.builder(_entity, context);
   }
 
@@ -142,10 +139,7 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   }
 
   _update() {
-    if (_isDirty == false) {
-      _isDirty = true;
-      setState(() {});
-    }
+    setState(() {});
   }
 
   @override
@@ -178,8 +172,6 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
     implements GroupObserver {
   // holds reference to group under observation
   Group _group;
-  // marsk if `setState` was already called
-  var _isDirty = false;
 
   @override
   void didChangeDependencies() {
@@ -192,7 +184,6 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
 
   @override
   Widget build(BuildContext context) {
-    _isDirty = false;
     return widget.builder(_group, context);
   }
 
@@ -221,9 +212,8 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   }
 
   _update() {
-    if (_isDirty == false) {
-      _isDirty = true;
       setState(() {});
-    }
   }
 }
+
+

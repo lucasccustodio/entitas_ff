@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.1+2
+- Minor optimization by overring didChangeDependencies
+
 ## 0.1.1+1
 - Introduce the ExitSystem interface to call exit() when the application is terminated
 - Add an update component method for Entity
