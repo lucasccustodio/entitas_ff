@@ -8,6 +8,7 @@ import 'behaviour.dart';
 class EntityManagerProvider extends InheritedWidget {
   /// [EntityManager] instance provided on intialisation.
   final EntityManager entityManager;
+
   /// [RootSystem] instance provided on intialisation. Can be `null`.
   final RootSystem systems;
 
@@ -19,34 +20,39 @@ class EntityManagerProvider extends InheritedWidget {
   })  : assert(child != null),
         assert(entityManager != null),
         entityManager = entityManager,
-        super(key: key, child: systems != null ? _RootSystemWidget(child: child, systems: systems) : child);
+        super(
+            key: key,
+            child: systems != null
+                ? _RootSystemWidget(child: child, systems: systems)
+                : child);
 
   /// Returns [EntityManagerProvider] if it is part of your widget tree. Otherwise returns `null`.
   static EntityManagerProvider of(BuildContext context) {
-    return context.inheritFromWidgetOfExactType(EntityManagerProvider) as EntityManagerProvider;
+    return context.inheritFromWidgetOfExactType(EntityManagerProvider)
+        as EntityManagerProvider;
   }
 
   @override
-  bool updateShouldNotify(EntityManagerProvider oldWidget) => oldWidget.entityManager != entityManager;
+  bool updateShouldNotify(EntityManagerProvider oldWidget) =>
+      oldWidget.entityManager != entityManager;
 }
 
 /// Internal widget which is used to tick along the instance of [RootSystem].
-class _RootSystemWidget extends StatefulWidget{
+class _RootSystemWidget extends StatefulWidget {
   final Widget child;
   final RootSystem systems;
-  const _RootSystemWidget({
-        Key key,
-        @required this.child,
-        @required this.systems
-  }) : assert(systems != null), super(key: key);
+  const _RootSystemWidget(
+      {Key key, @required this.child, @required this.systems})
+      : assert(systems != null),
+        super(key: key);
 
   @override
   State<StatefulWidget> createState() => _RootSystemWidgetState();
 }
 
 /// State class of internal widget [_RootSystemWidget]
-class _RootSystemWidgetState extends State<_RootSystemWidget> with SingleTickerProviderStateMixin{
-
+class _RootSystemWidgetState extends State<_RootSystemWidget>
+    with SingleTickerProviderStateMixin {
   Ticker _ticker;
 
   @override
@@ -77,6 +83,7 @@ class _RootSystemWidgetState extends State<_RootSystemWidget> with SingleTickerP
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
 typedef Entity EntityProvider(EntityManager entityManager);
+
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
 typedef Widget EntityBackedWidgetBuilder(Entity e, BuildContext context);
 
@@ -84,26 +91,28 @@ typedef Widget EntityBackedWidgetBuilder(Entity e, BuildContext context);
 class EntityObservingWidget extends StatefulWidget {
   /// Function which returns an entity the widget should observe.
   final EntityProvider provider;
+
   /// Function which is builds widgets child, based on [Entity] and [BuildContext].
   final EntityBackedWidgetBuilder builder;
 
-  const EntityObservingWidget({Key key, @required this.provider, @required this.builder}) : super(key: key);
+  const EntityObservingWidget(
+      {Key key, @required this.provider, @required this.builder})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => EntityObservingWidgetState();
-
 }
 
 /// State class for [EntityObservingWidget].
-class EntityObservingWidgetState extends State<EntityObservingWidget> implements EntityObserver {
+class EntityObservingWidgetState extends State<EntityObservingWidget>
+    implements EntityObserver {
   // holds reference to entity under observation
   Entity _entity;
   // marks if `setState` was already called
   var _isDirty = false;
 
   @override
-  Widget build(BuildContext context) {
-    _isDirty = false;
+  void didChangeDependencies() {
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null, "$widget is not a child of EntityObservingWidget");
     _entity?.removeObserver(this);
@@ -111,6 +120,12 @@ class EntityObservingWidgetState extends State<EntityObservingWidget> implements
     if (_entity != null) {
       _entity.addObserver(this);
     }
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    _isDirty = false;
     return widget.builder(_entity, context);
   }
 
@@ -147,30 +162,37 @@ typedef Widget GroupBackedWidgetBuilder(Group group, BuildContext context);
 class GroupObservingWidget extends StatefulWidget {
   /// holds reference to provided matcher
   final EntityMatcher matcher;
+
   /// holds reference to function which builds the child [Widget]
   final GroupBackedWidgetBuilder builder;
 
-  const GroupObservingWidget({Key key, @required this.matcher, @required this.builder}) : super(key: key);
+  const GroupObservingWidget(
+      {Key key, @required this.matcher, @required this.builder})
+      : super(key: key);
 
   @override
   State<StatefulWidget> createState() => GroupObservingWidgetState();
-
 }
 
-class GroupObservingWidgetState extends State<GroupObservingWidget> implements GroupObserver {
+class GroupObservingWidgetState extends State<GroupObservingWidget>
+    implements GroupObserver {
   // holds reference to group under observation
   Group _group;
-  // marsk if `setState` was already called 
+  // marsk if `setState` was already called
   var _isDirty = false;
 
   @override
-  Widget build(BuildContext context) {
-    _isDirty = false;
+  void didChangeDependencies() {
     var manager = EntityManagerProvider.of(context).entityManager;
     _group?.removeObserver(this);
     _group = manager.groupMatching(widget.matcher);
     _group.addObserver(this);
+    super.didChangeDependencies();
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    _isDirty = false;
     return widget.builder(_group, context);
   }
 
