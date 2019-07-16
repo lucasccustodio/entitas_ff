@@ -122,6 +122,18 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   }
 
   @override
+  void didUpdateWidget(EntityObservingWidget oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null, "$widget is not a child of EntityObservingWidget");
+    _entity?.removeObserver(this);
+    _entity = widget.provider(manager);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    }
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return widget.builder(_entity, context);
   }
@@ -176,10 +188,21 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   @override
   void didChangeDependencies() {
     var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null, "$widget is not a child of GroupObservingWidget");
     _group?.removeObserver(this);
     _group = manager.groupMatching(widget.matcher);
     _group.addObserver(this);
     super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(GroupObservingWidget oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null, "$widget is not a child of GroupObservingWidget");
+    _group?.removeObserver(this);
+    _group = manager.groupMatching(widget.matcher);
+    _group.addObserver(this);
+    super.didUpdateWidget(oldWidget);
   }
 
   @override
@@ -212,8 +235,503 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   }
 
   _update() {
-      setState(() {});
+    setState(() {});
   }
 }
 
+typedef EntityBackedAnimatedBuilder<T>(
+    Entity entity, Animation<T> animation, BuildContext context);
 
+class EntityObservingAnimatedWidget<T> extends StatefulWidget {
+  final EntityProvider provider;
+  final EntityBackedAnimatedBuilder<T> builder;
+  final Tween<T> animation;
+  final Curve curve;
+  final Duration duration;
+  final bool startAnimating;
+  final bool Function(Entity) reverse;
+
+  const EntityObservingAnimatedWidget(
+      {Key key,
+      this.provider,
+      this.builder,
+      this.animation,
+      this.curve = Curves.linear,
+      this.duration = const Duration(milliseconds: 300),
+      this.startAnimating = false,
+      this.reverse})
+      : super(key: key);
+
+  @override
+  _EntityObservingAnimatedWidgetState<T> createState() =>
+      _EntityObservingAnimatedWidgetState<T>();
+}
+
+class _EntityObservingAnimatedWidgetState<T>
+    extends State<EntityObservingAnimatedWidget<T>>
+    with SingleTickerProviderStateMixin
+    implements EntityObserver {
+  Entity _entity;
+  AnimationController _controller;
+  Animation<T> _animation;
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        setState(() {});
+      });
+
+    _animation = widget.animation
+        .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    if (widget.startAnimating) _controller.forward(from: 0);
+
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entity = widget.provider(manager);
+    _entity?.removeObserver(this);
+    if (entity != null) _entity = entity;
+    _entity.addObserver(this);
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(EntityObservingAnimatedWidget<T> oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entity = widget.provider(manager);
+    _entity?.removeObserver(this);
+    if (entity != null) _entity = entity;
+    _entity.addObserver(this);
+    _animation = widget.animation
+        .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    if (widget.startAnimating) _controller.forward(from: 0);
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entity, _animation, context);
+  }
+
+  @override
+  void dispose() {
+    _entity.removeObserver(this);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  destroyed(Entity e) {
+    _controller.reset();
+  }
+
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    var reverse = widget.reverse?.call(e) ?? false;
+    if (reverse)
+      _controller.reverse(from: 1.0);
+    else
+      _controller.forward(from: 0);
+  }
+}
+
+typedef EntityBackedAnimationsBuilder(
+    Entity entity, Map<String, Animation> animations, BuildContext context);
+
+class EntityObservingAnimationsWidget extends StatefulWidget {
+  final EntityProvider provider;
+  final EntityBackedAnimationsBuilder builder;
+  final Map<String, Tween> animations;
+  final Curve curve;
+  final Duration duration;
+  final bool startAnimating;
+  final bool Function(Entity) reverse;
+
+  const EntityObservingAnimationsWidget(
+      {Key key,
+      this.provider,
+      this.builder,
+      this.animations,
+      this.curve = Curves.linear,
+      this.duration = const Duration(milliseconds: 300),
+      this.startAnimating = false,
+      this.reverse})
+      : super(key: key);
+
+  @override
+  _EntityObservingAnimationsWidgetState createState() =>
+      _EntityObservingAnimationsWidgetState();
+}
+
+class _EntityObservingAnimationsWidgetState
+    extends State<EntityObservingAnimationsWidget>
+    with SingleTickerProviderStateMixin
+    implements EntityObserver {
+  Entity _entity;
+  AnimationController _controller;
+  Map<String, Animation> _animations;
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        setState(() {});
+      });
+    _animations = widget.animations.map((name, anim) =>
+        MapEntry<String, Animation>(
+            name,
+            anim.animate(
+                CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimationsWidget");
+    var entity = widget.provider(manager);
+    _entity?.removeObserver(this);
+    if (entity != null) _entity = entity;
+    _entity.addObserver(this);
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(EntityObservingAnimationsWidget oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimationsWidget");
+    var entity = widget.provider(manager);
+    _entity?.removeObserver(this);
+    if (entity != null) _entity = entity;
+    _entity.addObserver(this);
+    _animations = widget.animations.map((name, anim) =>
+        MapEntry<String, Animation>(
+            name,
+            anim.animate(
+                CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entity, _animations, context);
+  }
+
+  @override
+  void dispose() {
+    _entity.removeObserver(this);
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  destroyed(Entity e) {
+    _controller.reset();
+  }
+
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    var reverse = widget.reverse?.call(e) ?? false;
+    if (reverse)
+      _controller.reverse(from: 1.0);
+    else
+      _controller.forward(from: 0);
+  }
+}
+
+typedef Widget EntityMapBackedWidgetBuilder(
+    Map<String, Entity> entityMap, BuildContext context);
+
+typedef Map<String, Entity> EntityMapProvider(EntityManager em);
+
+class EntityMapObservingWidget extends StatefulWidget {
+  final EntityMapProvider provider;
+  final EntityMapBackedWidgetBuilder builder;
+
+  const EntityMapObservingWidget({Key key, this.provider, this.builder})
+      : super(key: key);
+
+  @override
+  _EntityMapObservingWidgetState createState() =>
+      _EntityMapObservingWidgetState();
+}
+
+class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
+    implements EntityObserver {
+  Map<String, Entity> _entityMap;
+
+  @override
+  void didUpdateWidget(EntityMapObservingWidget oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(
+        manager != null, "$widget is not a child of EntityMapObservingWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  void didChangeDependencies() {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(
+        manager != null, "$widget is not a child of EntityMapObservingWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    super.didChangeDependencies();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entityMap, context);
+  }
+
+  @override
+  void dispose() {
+    _entityMap.forEach((_, e) => e.removeObserver(this));
+    super.dispose();
+  }
+
+  @override
+  destroyed(Entity e) {
+    _update();
+  }
+
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    _update();
+  }
+
+  void _update() {
+    setState(() {});
+  }
+}
+
+typedef EntityMapBackedAnimatedBuilder<T>(
+    Map<String, Entity> entity, Animation<T> animation, BuildContext context);
+
+class EntityMapObservingAnimatedWidget<T> extends StatefulWidget {
+  final EntityMapProvider provider;
+  final EntityMapBackedAnimatedBuilder<T> builder;
+  final Tween<T> animation;
+  final Curve curve;
+  final Duration duration;
+  final bool startAnimating;
+  final bool Function(Entity) reverse;
+
+  const EntityMapObservingAnimatedWidget(
+      {Key key,
+      this.provider,
+      this.builder,
+      this.animation,
+      this.curve = Curves.linear,
+      this.duration = const Duration(milliseconds: 300),
+      this.startAnimating = false,
+      this.reverse})
+      : super(key: key);
+
+  @override
+  _EntityMapObservingAnimatedWidgetState<T> createState() =>
+      _EntityMapObservingAnimatedWidgetState<T>();
+}
+
+class _EntityMapObservingAnimatedWidgetState<T>
+    extends State<EntityMapObservingAnimatedWidget<T>>
+    with SingleTickerProviderStateMixin
+    implements EntityObserver {
+  Map<String, Entity> _entityMap;
+  AnimationController _controller;
+  Animation<T> _animation;
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        setState(() {});
+      });
+
+    _animation = widget.animation
+        .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    if (widget.startAnimating) _controller.forward(from: 0);
+
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(EntityMapObservingAnimatedWidget<T> oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    _animation = widget.animation
+        .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
+    if (widget.startAnimating) _controller.forward(from: 0);
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entityMap, _animation, context);
+  }
+
+  @override
+  void dispose() {
+    _entityMap.forEach((_, e) => e.removeObserver(this));
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  destroyed(Entity e) {
+    _controller.reset();
+  }
+
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    var reverse = widget.reverse?.call(e) ?? false;
+    if (reverse)
+      _controller.reverse(from: 1.0);
+    else
+      _controller.forward(from: 0);
+  }
+}
+
+typedef EntityMapBackedAnimationsBuilder(Map<String, Entity> entity,
+    Map<String, Animation> animation, BuildContext context);
+
+class EntityMapObservingAnimationsWidget extends StatefulWidget {
+  final EntityMapProvider provider;
+  final EntityMapBackedAnimationsBuilder builder;
+  final Map<String, Tween> animationsMap;
+  final Curve curve;
+  final Duration duration;
+  final bool startAnimating;
+  final bool Function(Entity) reverse;
+
+  const EntityMapObservingAnimationsWidget(
+      {Key key,
+      this.provider,
+      this.builder,
+      this.animationsMap,
+      this.curve = Curves.linear,
+      this.duration = const Duration(milliseconds: 300),
+      this.startAnimating = false,
+      this.reverse})
+      : super(key: key);
+
+  @override
+  _EntityMapObservingAnimationsWidgetState createState() =>
+      _EntityMapObservingAnimationsWidgetState();
+}
+
+class _EntityMapObservingAnimationsWidgetState<T>
+    extends State<EntityMapObservingAnimationsWidget>
+    with SingleTickerProviderStateMixin
+    implements EntityObserver {
+  Map<String, Entity> _entityMap;
+  AnimationController _controller;
+  Map<String, Animation> _animationsMap;
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        setState(() {});
+      });
+
+    _animationsMap = widget.animationsMap.map((name, anim) =>
+        MapEntry<String, Animation>(
+            name,
+            anim.animate(
+                CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
+
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(EntityMapObservingAnimationsWidget oldWidget) {
+    var manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null,
+        "$widget is not a child of EntityObservingAnimatedWidget");
+    var entityMap = widget.provider(manager);
+    _entityMap?.forEach((_, e) => e.removeObserver(this));
+    if (entityMap != null) _entityMap = entityMap;
+    _entityMap.forEach((_, e) => e.addObserver(this));
+    _animationsMap = widget.animationsMap.map((name, anim) =>
+        MapEntry<String, Animation>(
+            name,
+            anim.animate(
+                CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
+    super.didUpdateWidget(oldWidget);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entityMap, _animationsMap, context);
+  }
+
+  @override
+  void dispose() {
+    _entityMap.forEach((_, e) => e.removeObserver(this));
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  destroyed(Entity e) {
+    _controller.reset();
+  }
+
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    var reverse = widget.reverse?.call(e) ?? false;
+    if (reverse)
+      _controller.reverse(from: 1.0);
+    else
+      _controller.forward(from: 0);
+  }
+}
