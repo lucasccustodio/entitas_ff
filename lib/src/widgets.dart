@@ -115,9 +115,7 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     assert(manager != null, "$widget is not a child of EntityObservingWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) {
-      _entity.addObserver(this);
-    }
+    if (_entity != null) _entity.addObserver(this);
     super.didChangeDependencies();
   }
 
@@ -127,9 +125,7 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     assert(manager != null, "$widget is not a child of EntityObservingWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) {
-      _entity.addObserver(this);
-    }
+    if (_entity != null) _entity.addObserver(this);
     super.didUpdateWidget(oldWidget);
   }
 
@@ -294,10 +290,9 @@ class _EntityObservingAnimatedWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entity = widget.provider(manager);
     _entity?.removeObserver(this);
-    if (entity != null) _entity = entity;
-    _entity.addObserver(this);
+    _entity = widget.provider(manager);
+    if (_entity != null) _entity.addObserver(this);
     super.didChangeDependencies();
   }
 
@@ -306,10 +301,9 @@ class _EntityObservingAnimatedWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entity = widget.provider(manager);
     _entity?.removeObserver(this);
-    if (entity != null) _entity = entity;
-    _entity.addObserver(this);
+    _entity = widget.provider(manager);
+    if (_entity != null) _entity.addObserver(this);
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
@@ -323,7 +317,7 @@ class _EntityObservingAnimatedWidgetState<T>
 
   @override
   void dispose() {
-    _entity.removeObserver(this);
+    _entity?.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
@@ -399,10 +393,9 @@ class _EntityObservingAnimationsWidgetState
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimationsWidget");
-    var entity = widget.provider(manager);
     _entity?.removeObserver(this);
-    if (entity != null) _entity = entity;
-    _entity.addObserver(this);
+    _entity = widget.provider(manager);
+    if (_entity != null) _entity.addObserver(this);
     super.didChangeDependencies();
   }
 
@@ -411,10 +404,9 @@ class _EntityObservingAnimationsWidgetState
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimationsWidget");
-    var entity = widget.provider(manager);
     _entity?.removeObserver(this);
-    if (entity != null) _entity = entity;
-    _entity.addObserver(this);
+    _entity = widget.provider(manager);
+    if (_entity != null) _entity.addObserver(this);
     _animations = widget.animations.map((name, anim) =>
         MapEntry<String, Animation>(
             name,
@@ -431,7 +423,7 @@ class _EntityObservingAnimationsWidgetState
 
   @override
   void dispose() {
-    _entity.removeObserver(this);
+    _entity?.removeObserver(this);
     _controller.dispose();
     super.dispose();
   }
@@ -477,10 +469,9 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(
         manager != null, "$widget is not a child of EntityMapObservingWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     super.didUpdateWidget(oldWidget);
   }
 
@@ -489,10 +480,9 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(
         manager != null, "$widget is not a child of EntityMapObservingWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     super.didChangeDependencies();
   }
 
@@ -503,7 +493,7 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
 
   @override
   void dispose() {
-    _entityMap.forEach((_, e) => e.removeObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
     super.dispose();
   }
 
@@ -577,10 +567,9 @@ class _EntityMapObservingAnimatedWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     super.didChangeDependencies();
   }
 
@@ -589,10 +578,9 @@ class _EntityMapObservingAnimatedWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
@@ -606,7 +594,7 @@ class _EntityMapObservingAnimatedWidgetState<T>
 
   @override
   void dispose() {
-    _entityMap.forEach((_, e) => e.removeObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _controller.dispose();
     super.dispose();
   }
@@ -684,10 +672,9 @@ class _EntityMapObservingAnimationsWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     super.didChangeDependencies();
   }
 
@@ -696,10 +683,9 @@ class _EntityMapObservingAnimationsWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    var entityMap = widget.provider(manager);
-    _entityMap?.forEach((_, e) => e.removeObserver(this));
-    if (entityMap != null) _entityMap = entityMap;
-    _entityMap.forEach((_, e) => e.addObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
     _animationsMap = widget.animationsMap.map((name, anim) =>
         MapEntry<String, Animation>(
             name,
@@ -716,7 +702,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
 
   @override
   void dispose() {
-    _entityMap.forEach((_, e) => e.removeObserver(this));
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _controller.dispose();
     super.dispose();
   }
