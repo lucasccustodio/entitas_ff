@@ -338,9 +338,9 @@ class _EntityObservingAnimatedWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var ignore = widget.shouldAnimate?.call(newC) ?? false;
+    var shouldAnimate = widget.shouldAnimate?.call(newC) ?? true;
 
-    if (ignore) return;
+    if (!shouldAnimate) return;
 
     var reverse = widget.reverse?.call(newC) ?? false;
 
@@ -454,9 +454,9 @@ class _EntityObservingAnimationsWidgetState
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var ignore = widget.shouldAnimate?.call(newC) ?? false;
+    var shouldAnimate = widget.shouldAnimate?.call(newC) ?? true;
 
-    if (ignore) return;
+    if (!shouldAnimate) return;
 
     var reverse = widget.reverse?.call(newC) ?? false;
 
@@ -656,9 +656,9 @@ class _EntityMapObservingAnimatedWidgetState<T>
       if (entry.value == e) entityName = entry.key;
     }
 
-    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? false;
+    var shouldAnimate = widget.shouldAnimate?.call(entityName, newC) ?? true;
 
-    if (ignore) return;
+    if (!shouldAnimate) return;
 
     var reverse = widget.reverse?.call(entityName, newC) ?? false;
 
@@ -781,9 +781,9 @@ class _EntityMapObservingAnimationsWidgetState<T>
       if (entry.value == e) entityName = entry.key;
     }
 
-    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? false;
+    var shouldAnimate = widget.shouldAnimate?.call(entityName, newC) ?? true;
 
-    if (ignore) return;
+    if (!shouldAnimate) return;
 
     var reverse = widget.reverse?.call(entityName, newC) ?? false;
 
