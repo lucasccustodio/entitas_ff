@@ -338,7 +338,7 @@ class _EntityObservingAnimatedWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var ignore = widget.shouldAnimate?.call(newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(newC) ?? false;
 
     if (ignore) return;
 
@@ -454,7 +454,7 @@ class _EntityObservingAnimationsWidgetState
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var ignore = widget.shouldAnimate?.call(newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(newC) ?? false;
 
     if (ignore) return;
 
@@ -656,7 +656,7 @@ class _EntityMapObservingAnimatedWidgetState<T>
       if (entry.value == e) entityName = entry.key;
     }
 
-    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? false;
 
     if (ignore) return;
 
@@ -781,7 +781,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
       if (entry.value == e) entityName = entry.key;
     }
 
-    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? false;
 
     if (ignore) return;
 
