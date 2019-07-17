@@ -340,7 +340,7 @@ class _EntityObservingAnimatedWidgetState<T>
   exchanged(Entity e, Component oldC, Component newC) {
     var ignore = widget.shouldAnimate?.call(newC) ?? true;
 
-    if (!ignore) return;
+    if (ignore) return;
 
     var reverse = widget.reverse?.call(newC) ?? false;
 
@@ -403,6 +403,7 @@ class _EntityObservingAnimationsWidgetState
             name,
             anim.animate(
                 CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
     super.initState();
   }
 
@@ -455,7 +456,7 @@ class _EntityObservingAnimationsWidgetState
   exchanged(Entity e, Component oldC, Component newC) {
     var ignore = widget.shouldAnimate?.call(newC) ?? true;
 
-    if (!ignore) return;
+    if (ignore) return;
 
     var reverse = widget.reverse?.call(newC) ?? false;
 
@@ -657,7 +658,7 @@ class _EntityMapObservingAnimatedWidgetState<T>
 
     var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
 
-    if (!ignore) return;
+    if (ignore) return;
 
     var reverse = widget.reverse?.call(entityName, newC) ?? false;
 
@@ -721,6 +722,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
             name,
             anim.animate(
                 CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
     super.initState();
   }
 
@@ -750,6 +752,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
     if (_entityMap != null) {
       _entityMap.forEach((_, e) => e?.addObserver(this));
     }
+    if (widget.startAnimating) _controller.forward(from: 0);
     super.didUpdateWidget(oldWidget);
   }
 
@@ -780,7 +783,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
 
     var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
 
-    if (!ignore) return;
+    if (ignore) return;
 
     var reverse = widget.reverse?.call(entityName, newC) ?? false;
 
