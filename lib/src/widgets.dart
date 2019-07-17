@@ -92,7 +92,7 @@ class EntityObservingWidget extends StatefulWidget {
   /// Function which returns an entity the widget should observe.
   final EntityProvider provider;
 
-  /// Function which is builds widgets child, based on [Entity] and [BuildContext].
+  /// Function which builds this widgets child, based on [Entity] and [BuildContext].
   final EntityBackedWidgetBuilder builder;
 
   const EntityObservingWidget(
@@ -235,27 +235,37 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   }
 }
 
+/// Defines a function which given an [Entity] instance, an [Animation] and [BuildContext] builds an animated widget.
 typedef EntityBackedAnimatedBuilder<T>(
     Entity entity, Animation<T> animation, BuildContext context);
 
+/// Modified [EntityObservingWidget] that also plays an animation
 class EntityObservingAnimatedWidget<T> extends StatefulWidget {
   final EntityProvider provider;
   final EntityBackedAnimatedBuilder<T> builder;
   final Tween<T> animation;
   final Curve curve;
   final Duration duration;
+
+  /// Whether or not animate on the first build
   final bool startAnimating;
-  final bool Function(Entity) reverse;
+
+  /// The function provides the changed [Component] and the result tells whether or not play the animation;
+  final bool Function(Component c) shouldAnimate;
+
+  /// Builds upon the above function and also informs if the animation should play in reverse instead;
+  final bool Function(Component c) reverse;
 
   const EntityObservingAnimatedWidget(
       {Key key,
-      this.provider,
-      this.builder,
-      this.animation,
+      @required this.provider,
+      @required this.builder,
+      @required this.animation,
+      @required this.startAnimating,
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
-      this.startAnimating = false,
-      this.reverse})
+      this.reverse,
+      this.shouldAnimate})
       : super(key: key);
 
   @override
@@ -263,6 +273,7 @@ class EntityObservingAnimatedWidget<T> extends StatefulWidget {
       _EntityObservingAnimatedWidgetState<T>();
 }
 
+/// State class of [EntityObservingAnimatedWidget]
 class _EntityObservingAnimatedWidgetState<T>
     extends State<EntityObservingAnimatedWidget<T>>
     with SingleTickerProviderStateMixin
@@ -277,11 +288,9 @@ class _EntityObservingAnimatedWidgetState<T>
       ..addListener(() {
         setState(() {});
       });
-
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
-
     super.initState();
   }
 
@@ -329,7 +338,11 @@ class _EntityObservingAnimatedWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(e) ?? false;
+    var reverse = widget.reverse?.call(newC) ?? false;
+    var ignore = widget.shouldAnimate(newC) ?? true;
+
+    if (!ignore) return;
+
     if (reverse)
       _controller.reverse(from: 1.0);
     else
@@ -337,9 +350,11 @@ class _EntityObservingAnimatedWidgetState<T>
   }
 }
 
+/// Same as [EntityBackedAnimatedBuilder] but allows multiple animations
 typedef EntityBackedAnimationsBuilder(
     Entity entity, Map<String, Animation> animations, BuildContext context);
 
+/// Modified version of [EntityObservingAnimatedWidget] for multiple animations
 class EntityObservingAnimationsWidget extends StatefulWidget {
   final EntityProvider provider;
   final EntityBackedAnimationsBuilder builder;
@@ -347,24 +362,27 @@ class EntityObservingAnimationsWidget extends StatefulWidget {
   final Curve curve;
   final Duration duration;
   final bool startAnimating;
-  final bool Function(Entity) reverse;
+  final bool Function(Component c) shouldAnimate;
+  final bool Function(Component c) reverse;
 
-  const EntityObservingAnimationsWidget(
-      {Key key,
-      this.provider,
-      this.builder,
-      this.animations,
-      this.curve = Curves.linear,
-      this.duration = const Duration(milliseconds: 300),
-      this.startAnimating = false,
-      this.reverse})
-      : super(key: key);
+  const EntityObservingAnimationsWidget({
+    Key key,
+    @required this.provider,
+    @required this.builder,
+    @required this.animations,
+    @required this.startAnimating,
+    this.curve = Curves.linear,
+    this.duration = const Duration(milliseconds: 300),
+    this.reverse,
+    this.shouldAnimate,
+  }) : super(key: key);
 
   @override
   _EntityObservingAnimationsWidgetState createState() =>
       _EntityObservingAnimationsWidgetState();
 }
 
+/// State class of [EntityObservingAnimationsWidget]
 class _EntityObservingAnimationsWidgetState
     extends State<EntityObservingAnimationsWidget>
     with SingleTickerProviderStateMixin
@@ -384,7 +402,6 @@ class _EntityObservingAnimationsWidgetState
             name,
             anim.animate(
                 CurvedAnimation(parent: _controller, curve: widget.curve))));
-    if (widget.startAnimating) _controller.forward(from: 0);
     super.initState();
   }
 
@@ -435,7 +452,11 @@ class _EntityObservingAnimationsWidgetState
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(e) ?? false;
+    var reverse = widget.reverse?.call(newC) ?? false;
+    var ignore = widget.shouldAnimate(newC) ?? true;
+
+    if (!ignore) return;
+
     if (reverse)
       _controller.reverse(from: 1.0);
     else
@@ -443,11 +464,14 @@ class _EntityObservingAnimationsWidgetState
   }
 }
 
+/// Defines a function for building a Widget when any of the [Entity]'s from entityMap changes
 typedef Widget EntityMapBackedWidgetBuilder(
     Map<String, Entity> entityMap, BuildContext context);
 
+/// Given a [EntityManager] instance returns a map of [Entity]s to observe
 typedef Map<String, Entity> EntityMapProvider(EntityManager em);
 
+/// Modified version of [EntityObservingWidget] that can observe multiple [Entity]s
 class EntityMapObservingWidget extends StatefulWidget {
   final EntityMapProvider provider;
   final EntityMapBackedWidgetBuilder builder;
@@ -460,6 +484,7 @@ class EntityMapObservingWidget extends StatefulWidget {
       _EntityMapObservingWidgetState();
 }
 
+/// State class of [EntityMapObservingWidget]
 class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
     implements EntityObserver {
   Map<String, Entity> _entityMap;
@@ -512,27 +537,43 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
   }
 }
 
+/// Modified version of [EntityBackedAnimatedBuilder] for maps
 typedef EntityMapBackedAnimatedBuilder<T>(
     Map<String, Entity> entity, Animation<T> animation, BuildContext context);
 
+/// Modified version of [EntityObservingAnimatedWidget] for maps
 class EntityMapObservingAnimatedWidget<T> extends StatefulWidget {
   final EntityMapProvider provider;
   final EntityMapBackedAnimatedBuilder<T> builder;
+
+  /// [Animation] to play
   final Tween<T> animation;
+
+  /// [Curve] to use on the animation, defaults to [Curves.linear]
   final Curve curve;
+
+  /// Duration of the animation
   final Duration duration;
+
+  /// If true, starts playing the animation when the widget is first built
   final bool startAnimating;
-  final bool Function(Entity) reverse;
+
+  /// Called when any of the observed [Entity]s changes a component, tells the [Entity]'s name and it's changed [Component] to determine if the animation should be played
+  final bool Function(String name, Component c) shouldAnimate;
+
+  /// Called when any of the observed [Entity]s changes a component, tells the [Entity]'s name and it's changed [Component] to determine if the animation should be played in reverse
+  final bool Function(String name, Component c) reverse;
 
   const EntityMapObservingAnimatedWidget(
       {Key key,
-      this.provider,
-      this.builder,
-      this.animation,
+      @required this.provider,
+      @required this.builder,
+      @required this.animation,
+      @required this.startAnimating,
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
-      this.startAnimating = false,
-      this.reverse})
+      this.reverse,
+      this.shouldAnimate})
       : super(key: key);
 
   @override
@@ -540,6 +581,7 @@ class EntityMapObservingAnimatedWidget<T> extends StatefulWidget {
       _EntityMapObservingAnimatedWidgetState<T>();
 }
 
+/// State class of [EntityMapObservingAnimatedWidget]
 class _EntityMapObservingAnimatedWidgetState<T>
     extends State<EntityMapObservingAnimatedWidget<T>>
     with SingleTickerProviderStateMixin
@@ -554,11 +596,9 @@ class _EntityMapObservingAnimatedWidgetState<T>
       ..addListener(() {
         setState(() {});
       });
-
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
-
     super.initState();
   }
 
@@ -606,7 +646,19 @@ class _EntityMapObservingAnimatedWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(e) ?? false;
+    var entityName;
+
+    //Lookup for the entity ID on the provided map
+    for (var entry in _entityMap.entries) {
+      if (entry.value == e) entityName = entry.key;
+    }
+
+    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
+
+    if (!ignore) return;
+
+    var reverse = widget.reverse?.call(entityName, newC) ?? false;
+
     if (reverse)
       _controller.reverse(from: 1.0);
     else
@@ -614,27 +666,31 @@ class _EntityMapObservingAnimatedWidgetState<T>
   }
 }
 
+/// Modified version of [EntityMapBackedAnimatedBuilder] for multiple animations
 typedef EntityMapBackedAnimationsBuilder(Map<String, Entity> entity,
     Map<String, Animation> animation, BuildContext context);
 
+/// Modified version of [EntityMapObservingAnimatedBuilder] for multiple animations
 class EntityMapObservingAnimationsWidget extends StatefulWidget {
   final EntityMapProvider provider;
   final EntityMapBackedAnimationsBuilder builder;
-  final Map<String, Tween> animationsMap;
+  final Map<String, Tween> animations;
   final Curve curve;
   final Duration duration;
   final bool startAnimating;
-  final bool Function(Entity) reverse;
+  final bool Function(String name, Component c) shouldAnimate;
+  final bool Function(String name, Component c) reverse;
 
   const EntityMapObservingAnimationsWidget(
       {Key key,
-      this.provider,
-      this.builder,
-      this.animationsMap,
+      @required this.provider,
+      @required this.builder,
+      @required this.animations,
+      @required this.startAnimating,
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
-      this.startAnimating = false,
-      this.reverse})
+      this.reverse,
+      this.shouldAnimate})
       : super(key: key);
 
   @override
@@ -642,6 +698,7 @@ class EntityMapObservingAnimationsWidget extends StatefulWidget {
       _EntityMapObservingAnimationsWidgetState();
 }
 
+/// State class of [EntityMapObservingAnimationsWidget]
 class _EntityMapObservingAnimationsWidgetState<T>
     extends State<EntityMapObservingAnimationsWidget>
     with SingleTickerProviderStateMixin
@@ -657,13 +714,11 @@ class _EntityMapObservingAnimationsWidgetState<T>
         setState(() {});
       });
 
-    _animationsMap = widget.animationsMap.map((name, anim) =>
+    _animationsMap = widget.animations.map((name, anim) =>
         MapEntry<String, Animation>(
             name,
             anim.animate(
                 CurvedAnimation(parent: _controller, curve: widget.curve))));
-    if (widget.startAnimating) _controller.forward(from: 0);
-
     super.initState();
   }
 
@@ -683,15 +738,16 @@ class _EntityMapObservingAnimationsWidgetState<T>
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null,
         "$widget is not a child of EntityObservingAnimatedWidget");
-    _entityMap?.forEach((_, e) => e?.removeObserver(this));
-    _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
-    _animationsMap = widget.animationsMap.map((name, anim) =>
+    _animationsMap = widget.animations.map((name, anim) =>
         MapEntry<String, Animation>(
             name,
             anim.animate(
                 CurvedAnimation(parent: _controller, curve: widget.curve))));
-    if (widget.startAnimating) _controller.forward(from: 0);
+    _entityMap?.forEach((_, e) => e?.removeObserver(this));
+    _entityMap = widget.provider(manager);
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    }
     super.didUpdateWidget(oldWidget);
   }
 
@@ -714,7 +770,18 @@ class _EntityMapObservingAnimationsWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(e) ?? false;
+    var entityName;
+
+    for (var entry in _entityMap.entries) {
+      if (entry.value == e) entityName = entry.key;
+    }
+
+    var ignore = widget.shouldAnimate?.call(entityName, newC) ?? true;
+
+    if (!ignore) return;
+
+    var reverse = widget.reverse?.call(entityName, newC) ?? false;
+
     if (reverse)
       _controller.reverse(from: 1.0);
     else

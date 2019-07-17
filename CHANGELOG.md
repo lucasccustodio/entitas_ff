@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.1.1+3
+- Finer control over the animation-related widgets
+
 ## 0.1.1+2
 - Minor optimization by overring didChangeDependencies and didUpdateWidget
 - Added EntityMapObservingWidget, EntityMapObservingAnimatedWidget, EntityMapObservingAnimationsWidget and many other animation-related widgets
