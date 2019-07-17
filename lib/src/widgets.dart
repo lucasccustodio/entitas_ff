@@ -338,10 +338,11 @@ class _EntityObservingAnimatedWidgetState<T>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(newC) ?? false;
-    var ignore = widget.shouldAnimate(newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(newC) ?? true;
 
     if (!ignore) return;
+
+    var reverse = widget.reverse?.call(newC) ?? false;
 
     if (reverse)
       _controller.reverse(from: 1.0);
@@ -452,10 +453,11 @@ class _EntityObservingAnimationsWidgetState
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    var reverse = widget.reverse?.call(newC) ?? false;
-    var ignore = widget.shouldAnimate(newC) ?? true;
+    var ignore = widget.shouldAnimate?.call(newC) ?? true;
 
     if (!ignore) return;
+
+    var reverse = widget.reverse?.call(newC) ?? false;
 
     if (reverse)
       _controller.reverse(from: 1.0);
