@@ -461,6 +461,8 @@ class EntityManager implements EntityObserver {
     return e;
   }
 
+  void updateUnique<T extends UniqueComponent>(T Function(T old) updateTo) => getUniqueEntity<T>()?.update<T>(updateTo);
+
   /// Sets a unique component on a provided [Entity].
   /// As there can be only one instance of a unique component type, it will first remove old unqiue component.
   /// ### Example
