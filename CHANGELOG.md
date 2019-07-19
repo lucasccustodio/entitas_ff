@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+- Added FeatureSystem
+- Improved documentation
+- Added tests for basic widgets and FeatureSystem
+- Fixed some bugs
+
 ## 0.1.1+3
 - Finer control over the animation-related widgets
 

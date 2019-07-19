@@ -3,7 +3,6 @@ import 'package:test/test.dart';
 import 'components.dart';
 
 void main() {
-  
   test('Create entities', (){
     EntityManager em = EntityManager();
     var e1 = em.createEntity()

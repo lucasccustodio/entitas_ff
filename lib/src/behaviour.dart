@@ -2,8 +2,7 @@ import 'package:meta/meta.dart';
 import 'state.dart';
 
 /// An inteface which user need to implement in order to mark a class as a system.
-abstract class System {
-}
+abstract class System {}
 
 /// An interface which user needs to implement in order to mark a class an execute system.
 abstract class ExecuteSystem extends System {
@@ -28,18 +27,17 @@ abstract class ExitSystem extends System {
 abstract class EntityManagerSystem extends System {
   EntityManager __manager;
   @mustCallSuper
-  set _manager(EntityManager m){
+  set _manager(EntityManager m) {
     __manager = m;
   }
+
   EntityManager get entityManager => __manager;
 }
 
 /// Enum characterising the group change events.
 /// Used primarily by [ReactiveSystem]
 /// `any` every event is matching.
-enum GroupChangeEvent {
-  added, updated, removed, addedOrUpdated, any
-}
+enum GroupChangeEvent { added, updated, removed, addedOrUpdated, any }
 
 /// Abstract class which users must implement if they want to define a system which is triggered when the observed group has changed.
 /// Triggered means that `executeWith` method is called, provided with a list of all entities which changed after last execution.
@@ -58,7 +56,8 @@ enum GroupChangeEvent {
 ///       @override
 ///       EntityMatcher get matcher => EntityMatcher(all: [AddToShoppingCartComponent]);
 ///     }
-abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSystem, GroupObserver {
+abstract class ReactiveSystem extends EntityManagerSystem
+    implements ExecuteSystem, GroupObserver {
   // holds the group the reactive system is observing
   Group _group;
   // holds references to entities which changed since last execution
@@ -71,18 +70,19 @@ abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSyst
   /// Clears `_collectedEntities` after `executeWith` call.
   @override
   execute() {
-      if (_collectedEntities.isNotEmpty) {
-        executeWith(_collectedEntities.toList());
-        _collectedEntities.clear();
-      }
+    if (_collectedEntities.isNotEmpty) {
+      executeWith(_collectedEntities.toList());
+      _collectedEntities.clear();
+    }
   }
 
   /// Override of [EntityManagerSystem] class method.
-  /// This is where the [Group] instance is provided and the system starts observing the group. 
+  /// This is where the [Group] instance is provided and the system starts observing the group.
   @override
   set _manager(EntityManager m) {
     super._manager = m;
-    assert(matcher != null, "Matcher was not specified in system " + this.runtimeType.toString());
+    assert(matcher != null,
+        "Matcher was not specified in system " + this.runtimeType.toString());
     _group = __manager.groupMatching(matcher);
     _group.addObserver(this);
   }
@@ -91,18 +91,24 @@ abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSyst
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
   added(Group group, Entity entity) {
-    if (event == GroupChangeEvent.added || event == GroupChangeEvent.addedOrUpdated || event == GroupChangeEvent.any) {
+    if (event == GroupChangeEvent.added ||
+        event == GroupChangeEvent.addedOrUpdated ||
+        event == GroupChangeEvent.any) {
       _collectedEntities.add(entity);
     }
   }
+
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
   updated(Group group, Entity entity) {
-    if (event == GroupChangeEvent.updated || event == GroupChangeEvent.addedOrUpdated || event == GroupChangeEvent.any) {
+    if (event == GroupChangeEvent.updated ||
+        event == GroupChangeEvent.addedOrUpdated ||
+        event == GroupChangeEvent.any) {
       _collectedEntities.add(entity);
     }
   }
+
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
@@ -114,8 +120,10 @@ abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSyst
 
   /// Abstract methods user needs to implement. See example on the class definition.
   executeWith(List<Entity> entities);
+
   /// Abstract getter user needs to implement. See example on the class definition.
   EntityMatcher get matcher;
+
   /// Anbstract getter user needs to implement. See example on the class definition.
   GroupChangeEvent get event;
 }
@@ -124,7 +132,7 @@ abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSyst
 /// In comparison to [ReactiveSystem] a triggered system does not collect entities which changed after the last execution.
 /// The are many cases where we are only interested in the change itself and not in the entities which lead to this change.
 /// With this in mind [TriggeredSystem] provides a light weight alternative to [ReactiveSystem]
-/// 
+///
 /// ### Example
 ///     class ComputeTotalSumSystem extends TriggeredSystem {
 ///
@@ -144,7 +152,8 @@ abstract class ReactiveSystem extends EntityManagerSystem implements ExecuteSyst
 ///       }
 ///
 ///     }
-abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSystem, GroupObserver {
+abstract class TriggeredSystem extends EntityManagerSystem
+    implements ExecuteSystem, GroupObserver {
   // holds the group the system is observing
   Group _group;
   // holds the flag if the system should be executed this time
@@ -157,18 +166,19 @@ abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSys
   /// Sets `_triggered` to false after `executeOnChange` called.
   @override
   execute() {
-      if (_triggered) {
-        executeOnChange();
-        _triggered = false;
-      }
+    if (_triggered) {
+      executeOnChange();
+      _triggered = false;
+    }
   }
 
   /// Override of [EntityManagerSystem] class method.
-  /// This is where the [Group] instance is provided and the system starts observing the group. 
+  /// This is where the [Group] instance is provided and the system starts observing the group.
   @override
   set _manager(EntityManager m) {
     super._manager = m;
-    assert(matcher != null, "Matcher was not specified in system " + this.runtimeType.toString());
+    assert(matcher != null,
+        "Matcher was not specified in system " + this.runtimeType.toString());
     _group = __manager.groupMatching(matcher);
     _group.addObserver(this);
   }
@@ -177,18 +187,24 @@ abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSys
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
   added(Group group, Entity entity) {
-    if (event == GroupChangeEvent.added || event == GroupChangeEvent.addedOrUpdated || event == GroupChangeEvent.any) {
+    if (event == GroupChangeEvent.added ||
+        event == GroupChangeEvent.addedOrUpdated ||
+        event == GroupChangeEvent.any) {
       _triggered = true;
     }
   }
+
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
   updated(Group group, Entity entity) {
-    if (event == GroupChangeEvent.updated || event == GroupChangeEvent.addedOrUpdated || event == GroupChangeEvent.any) {
+    if (event == GroupChangeEvent.updated ||
+        event == GroupChangeEvent.addedOrUpdated ||
+        event == GroupChangeEvent.any) {
       _triggered = true;
     }
   }
+
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
@@ -200,11 +216,15 @@ abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSys
 
   /// Abstract methods user needs to implement. See example on the class definition.
   executeOnChange();
+
   /// Abstract getter user needs to implement. See example on the class definition.
   EntityMatcher get matcher;
+
   /// Abstract getter user needs to implement. See example on the class definition.
   GroupChangeEvent get event;
 }
+
+abstract class EntitySystem {}
 
 /// RootSystem can be considered as a parent node in an hierarchy of systems.
 /// It implements all the important system interfaces and is executed as all of them.
@@ -213,7 +233,8 @@ abstract class TriggeredSystem extends EntityManagerSystem implements ExecuteSys
 /// The children are devided into lists according to the interfaces they implement.
 /// When the root system is called as [InitSystem], it will delegate the call to it's children which also implement [InitSystem] interface.
 /// Same applies to [ExecuteSystem], [CleanupSystem] and [ExitSystem] calls and implementing children.
-class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem {
+class RootSystem extends EntitySystem
+    implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem {
   // holds reference to child systems which implement [InitSystem] interface
   final List<InitSystem> _initSystems = [];
   // holds reference to child systems which implement [ExecuteSystem] interface
@@ -225,7 +246,9 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
   // holds reference to [EntityManager] instance
   final EntityManager _entityManager;
 
-  RootSystem(this._entityManager, List<System> systems) {
+  RootSystem(
+      {@required EntityManager entityManager, List<System> systems = const []})
+      : _entityManager = entityManager {
     for (var s in systems) {
       if (s is EntityManagerSystem) {
         s._manager = _entityManager;
@@ -239,7 +262,7 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
       if (s is CleanupSystem) {
         _cleanupSystems.add(s);
       }
-      if (s is ExitSystem){
+      if (s is ExitSystem) {
         _exitSystems.add(s);
       }
     }
@@ -249,7 +272,7 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
   /// Delegates the call to its children.
   @override
   init() {
-    for (var s in _initSystems){
+    for (var s in _initSystems) {
       s.init();
     }
   }
@@ -258,7 +281,7 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
   /// Delegates the call to its children.
   @override
   execute() {
-    for (var s in _executeSystems){
+    for (var s in _executeSystems) {
       s.execute();
     }
   }
@@ -276,7 +299,7 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
   /// Delegates the call to its children.
   @override
   exit() {
-    for (var s in _exitSystems){
+    for (var s in _exitSystems) {
       s.exit();
     }
   }
@@ -285,8 +308,8 @@ class RootSystem implements ExecuteSystem, InitSystem, CleanupSystem, ExitSystem
 /// ReactiveRootSystem is a [RootSystem] which triggeres it's child systems only if a state of an [EntityManager] or of any [Entity] have changed.
 /// Users might use this implementation of [RootSystem] in order to minimise the amount of `execute` calls performed on every tick.
 /// User can provide a black list of component types which are excluded as meaningful execution triggeres.
-class ReactiveRootSystem extends RootSystem implements EntityManagerObserver, EntityObserver {
-
+class ReactiveRootSystem extends RootSystem
+    implements EntityManagerObserver, EntityObserver {
   // holds component types which are not considered as triggerable change
   Set<Type> _blackList;
   // holds a flag which defines if `execute` method on children should be called
@@ -294,7 +317,9 @@ class ReactiveRootSystem extends RootSystem implements EntityManagerObserver, En
   // holds a flag which defines if `cleanup` method on children should be called
   var _shouldCleanup = false;
 
-  ReactiveRootSystem(EntityManager entityManager, List<System> systems, {List<Type> blackList}) : super(entityManager, systems) {
+  ReactiveRootSystem(EntityManager entityManager, List<System> systems,
+      {List<Type> blackList})
+      : super(entityManager: entityManager, systems: systems) {
     _blackList = Set.from(blackList ?? []);
     entityManager.addObserver(this);
   }
@@ -320,10 +345,10 @@ class ReactiveRootSystem extends RootSystem implements EntityManagerObserver, En
     if (_shouldExecute) {
       return;
     }
-    if(oldC != null && _blackList.contains(oldC.runtimeType)) {
+    if (oldC != null && _blackList.contains(oldC.runtimeType)) {
       return;
     }
-    if(newC != null && _blackList.contains(newC.runtimeType)) {
+    if (newC != null && _blackList.contains(newC.runtimeType)) {
       return;
     }
     _shouldExecute = true;
@@ -335,7 +360,7 @@ class ReactiveRootSystem extends RootSystem implements EntityManagerObserver, En
   /// Sets `_shouldExecute` to `false`.
   @override
   execute() {
-    if(_shouldExecute) {
+    if (_shouldExecute) {
       _shouldExecute = false;
       super.execute();
     }
@@ -346,9 +371,73 @@ class ReactiveRootSystem extends RootSystem implements EntityManagerObserver, En
   /// Sets `_shouldCleanup` to `false`.
   @override
   cleanup() {
-    if(_shouldCleanup) {
+    if (_shouldCleanup) {
       _shouldCleanup = false;
       super.cleanup();
     }
+  }
+}
+
+/// Defines a callback for [FeatureSystem] that receives both its [RootSystem]'s [EntityManager] and internal [EntityManager]
+typedef void FeatureLifecycleCallback(
+    EntityManager featureEntityManager, EntityManager rootEntityManager);
+
+/// FeatureSystem is a modified version of [RootSystem].
+/// Its [EntityManager] instance is internal and meant for temporary usage as opposed to [RootSystem] ex: user registration, splash screens, dialogs, etc.
+class FeatureSystem extends EntitySystem
+    implements InitSystem, ExecuteSystem, CleanupSystem, ExitSystem {
+  final List<InitSystem> _initSystems = [];
+  final List<ExecuteSystem> _executeSystems = [];
+  final List<CleanupSystem> _cleanupSystems = [];
+  final List<ExitSystem> _exitSystems = [];
+  final EntityManager _rootEntityManager;
+  EntityManager entityManager = EntityManager();
+
+  FeatureLifecycleCallback _onCreate;
+  FeatureLifecycleCallback _onDestroy;
+
+  void onCreate() => _onCreate?.call(entityManager, _rootEntityManager);
+  void onDestroy() {
+    _onDestroy?.call(entityManager, _rootEntityManager);
+    entityManager = null;
+  }
+
+  FeatureSystem(
+      {@required EntityManager rootEntityManager,
+      List<System> systems = const [],
+      FeatureLifecycleCallback onCreate,
+      FeatureLifecycleCallback onDestroy})
+      : _rootEntityManager = rootEntityManager,
+        _onCreate = onCreate,
+        _onDestroy = onDestroy {
+    for (var s in systems) {
+      if (s is EntityManagerSystem) {
+        s._manager = entityManager;
+      }
+      if (s is InitSystem) _initSystems.add(s);
+      if (s is ExecuteSystem) _executeSystems.add(s);
+      if (s is CleanupSystem) _cleanupSystems.add(s);
+      if (s is ExitSystem) _exitSystems.add(s);
+    }
+  }
+
+  @override
+  cleanup() {
+    for (CleanupSystem s in _cleanupSystems) s.cleanup();
+  }
+
+  @override
+  execute() {
+    for (ExecuteSystem s in _executeSystems) s.execute();
+  }
+
+  @override
+  exit() {
+    for (ExitSystem s in _exitSystems) s.exit();
+  }
+
+  @override
+  init() {
+    for (InitSystem s in _initSystems) s.init();
   }
 }

@@ -1,5 +1,11 @@
 import 'package:entitas_ff/entitas_ff.dart';
 
+class CounterComponent extends UniqueComponent {
+  final int counter;
+
+  CounterComponent(this.counter);
+}
+
 class Name implements Component {
   final String value;
 
