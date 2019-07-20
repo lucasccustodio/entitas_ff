@@ -17,7 +17,7 @@ abstract class Component {}
 /// ### Example
 ///
 ///     class SelectedComponent implements UniqueComponent {}
-/// 
+///
 @immutable
 abstract class UniqueComponent extends Component {}
 
@@ -25,6 +25,7 @@ abstract class UniqueComponent extends Component {}
 abstract class EntityObserver {
   /// Called after the destroy method is called on the entity and all components are removed.
   destroyed(Entity e);
+
   /// Called after a component was added exchanged or removed from an [Entity] instance.
   /// When a component was added, it is reflected in `newC` and `oldC` is `null`.
   /// When a component was removed, old component is reflected in `oldC` and `newC` is `null`.
@@ -39,6 +40,7 @@ abstract class EntityObserver {
 ///   Entity e = em.createEntity();
 class Entity {
   Entity._(this.creationIndex, this._mainObserver);
+
   /// Creation Index is assigned by the [EntityManager] on creation and can be seen as a sequential id of an entity.
   final int creationIndex;
   // Main observer is a reference to the [EntityManager]
@@ -47,13 +49,17 @@ class Entity {
   Map<Type, Component> _components = Map();
   // Holding all obeservers.
   Set<EntityObserver> _observers = Set();
+
   /// Indicator if the entity was already destroyed.
   /// Checked internally on netity mutating operations.
   var isAlive = true;
+
   /// Returns component instance by type or `null` if not present.
   T get<T extends Component>() {
     var c = _components[T];
-    if (c == null) { return null;}
+    if (c == null) {
+      return null;
+    }
     return c as T;
   }
 
@@ -61,7 +67,7 @@ class Entity {
   /// If the entity already has a component of the same instance, the component will be replaced with provided one.
   /// After the component is set, all observers are notified.
   /// Calling this operator on a destroyed entity is considerered an error.
-  Entity operator + (Component c) {
+  Entity operator +(Component c) {
     assert(isAlive, "Calling `+` Component on destroyed entity");
     var oldC = _components[c.runtimeType];
     _components[c.runtimeType] = c;
@@ -82,7 +88,7 @@ class Entity {
   /// If component of the given type was not present on the entity, nothing happens.
   /// The observers are notified only if there was a component removed.
   /// Calling this operator on a destroyed entity is considerered an error.
-  Entity operator - (Type t) {
+  Entity operator -(Type t) {
     assert(isAlive, "Calling `-` Component on destroyed entity");
     var c = _components[t];
     if (c != null) {
@@ -113,7 +119,7 @@ class Entity {
   }
 
   /// Updates a given component on Entity if present and updateTo's result isn't `null`;
-  void update<T extends Component>(T updateTo(T prev)){
+  void update<T extends Component>(T updateTo(T prev)) {
     if (!hasT<T>()) return;
 
     T oldComponent = get<T>();
@@ -157,10 +163,10 @@ class Entity {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Entity &&
-              runtimeType == other.runtimeType &&
-              creationIndex == other.creationIndex &&
-              identical(_mainObserver, other._mainObserver);
+      other is Entity &&
+          runtimeType == other.runtimeType &&
+          creationIndex == other.creationIndex &&
+          identical(_mainObserver, other._mainObserver);
 
   /// We use `creationIndex` as hashcode
   @override
@@ -169,10 +175,10 @@ class Entity {
   // Caching the observer list, so that when observers are called they can safely remove themselves as observers
   List<EntityObserver> __observerList;
   List<EntityObserver> get _observerList {
-    if (__observerList == null ) {
+    if (__observerList == null) {
       __observerList = List.unmodifiable(_observers);
     }
-    
+
     return __observerList;
   }
 }
@@ -180,15 +186,22 @@ class Entity {
 /// EntityMatcher can be understood as a query. It can be used to checks if an [Entity] complies with provided rules.
 /// ### Example
 ///   var matcher = EntityMatcher(all: [A, B], any: [C, D] none: [E])
-/// For an neity to pass the given `matcher` it needs to contain components of type `A` and `B`. Either `C` or `D`. And no `E`.
+/// For an entity to pass the given `matcher` it needs to contain components of type `A` and `B`. Either `C` or `D`. And no `E`.
 /// The provided lists `all`, `any` and `none` are internally translated to a [Set]. This means that order and occurance of duplications is not important.
 /// If you provide the `none` list, you have to provide either `all` or `any` none empty list of component types.
 class EntityMatcher {
   final Set<Type> _all;
   final Set<Type> _any;
   final Set<Type> _none;
-  EntityMatcher({List<Type> all, List<Type> any, List<Type> none}): _all = Set.of(all ?? []), _any = Set.of(any ?? []), _none = Set.of(none ?? []) {
-    assert((_all != null && _all.length > 0)|| (_any != null && _any.length > 0), "Matcher needs to have all or any present");
+  final Set<Type> _maybe;
+  EntityMatcher({List<Type> all, List<Type> any, List<Type> none, List<Type> maybe})
+      : _all = Set.of(all ?? []),
+        _any = Set.of(any ?? []),
+        _none = Set.of(none ?? []),
+        _maybe = Set.of(maybe ?? []) {
+    assert(
+        (_all != null && _all.length > 0) || (_any != null && _any.length > 0),
+        "Matcher needs to have all or any present");
   }
 
   /// Checks if the [Entity] contains necessary components.
@@ -216,28 +229,28 @@ class EntityMatcher {
 
   /// Checks if `all`, `any` or `none` contains given type.
   bool containsType(Type t) {
-    return _all.contains(t) || _any.contains(t) || _none.contains(t);
+    return _all.contains(t) || _any.contains(t) || _none.contains(t) || _maybe.contains(t);
   }
 
   /// Matcher are equal if their `all`, `any`, `none` sets overlap.
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          (other is EntityMatcher &&
-              runtimeType == other.runtimeType &&
-              _all.length == other._all.length &&
-              _any.length == other._any.length &&
-              _none.length == other._none.length &&
-              _all.difference(other._all).isEmpty &&
-              _any.difference(other._any).isEmpty &&
-              _none.difference(other._none).isEmpty);
+      (other is EntityMatcher &&
+          runtimeType == other.runtimeType &&
+          _all.length == other._all.length &&
+          _any.length == other._any.length &&
+          _none.length == other._none.length &&
+          _all.difference(other._all).isEmpty &&
+          _any.difference(other._any).isEmpty &&
+          _none.difference(other._none).isEmpty);
 
   /// Different matchers with same `all`, `any`, `none` need to return equal hash code.
   @override
   int get hashCode {
-    var a = _all.fold(0, (int sum, Type t) =>  t.hashCode ^ sum);
-    var b = _any.fold(a << 4, (int sum, Type t) =>  t.hashCode ^ sum);
-    var c = _none.fold(b << 4, (int sum, Type t) =>  t.hashCode ^ sum);
+    var a = _all.fold(0, (int sum, Type t) => t.hashCode ^ sum);
+    var b = _any.fold(a << 4, (int sum, Type t) => t.hashCode ^ sum);
+    var c = _none.fold(b << 4, (int sum, Type t) => t.hashCode ^ sum);
     return c;
   }
 }
@@ -254,18 +267,18 @@ abstract class GroupObserver {
 /// ### Example
 ///   EntityManager em = EntityManager();
 ///   Group g = em.group(all: [Name, Age]);
-/// 
+///
 /// Always up to date means that if we create an entity `e` and add components `Name` and `Age` to it, the entity will directly become part of the group g.
-/// 
+///
 /// ### Example
 ///   Entity e = em.createEntity();
 ///   e += Name("Max");
 ///   e += Age(37);
 ///   // e is now accessible through g.
-/// 
+///
 ///   e -= Name;
 ///   // e is not part of g any more.
-/// 
+///
 /// Groups are observable, see `addObserver`, `removeObserver`.
 /// In order to access the entities of the group you need to call `entities` getter
 class Group implements EntityObserver {
@@ -273,6 +286,7 @@ class Group implements EntityObserver {
   Set<Entity> _entities = new Set();
   // References to group observers.
   Set<GroupObserver> _observers = new Set();
+
   /// Matcher which is used to check the compliance of the entities.
   final EntityMatcher matcher;
 
@@ -314,8 +328,10 @@ class Group implements EntityObserver {
   /// Please don't use manually.
   @override
   exchanged(Entity e, Component oldC, Component newC) {
-    final isRelevantAdd = newC != null && matcher.containsType(newC.runtimeType);
-    final isRelevantRemove = oldC != null && matcher.containsType(oldC.runtimeType);
+    final isRelevantAdd =
+        newC != null && matcher.containsType(newC.runtimeType);
+    final isRelevantRemove =
+        oldC != null && matcher.containsType(oldC.runtimeType);
     if ((isRelevantAdd || isRelevantRemove) == false) {
       return;
     }
@@ -336,7 +352,6 @@ class Group implements EntityObserver {
         for (var o in _observerList) {
           o.removed(this, e);
         }
-        
       }
     }
   }
@@ -348,13 +363,14 @@ class Group implements EntityObserver {
   ///   for(var e in group.entities) {
   ///     e.destroy();
   ///   }
-  /// As we call `destroy` on the entity `e` it will imideatly exit the group, but it is ok as we are iterating on list of entities and not on the group directly. 
+  /// As we call `destroy` on the entity `e` it will imideatly exit the group, but it is ok as we are iterating on list of entities and not on the group directly.
   List<Entity> get entities {
     if (__entities == null) {
       __entities = List.unmodifiable(_entities);
     }
     return __entities;
   }
+
   List<Entity> __entities;
 
   /// Helper method to perform destruction of all entities in the group.
@@ -368,9 +384,9 @@ class Group implements EntityObserver {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Group &&
-              runtimeType == other.runtimeType &&
-              matcher == other.matcher;
+      other is Group &&
+          runtimeType == other.runtimeType &&
+          matcher == other.matcher;
 
   /// Hash code of the group is equal to hash code of its matcher.
   @override
@@ -382,7 +398,7 @@ class Group implements EntityObserver {
     if (__observerList == null) {
       __observerList = List.unmodifiable(_observers);
     }
-    
+
     return __observerList;
   }
 }
@@ -398,7 +414,7 @@ abstract class EntityManagerObserver {
 class EntityManager implements EntityObserver {
   // sequential index of all created entities.
   var _currentEntityIndex = 0;
-  // holds all entities mapped by creation id. 
+  // holds all entities mapped by creation id.
   final Map<int, Entity> _entities = Map();
   // holds all groups mapped by entity matcher.
   final Map<EntityMatcher, Group> _groupsByMatcher = Map();
@@ -411,7 +427,7 @@ class EntityManager implements EntityObserver {
   /// ### Example
   ///   EntityManager em = EntityManager();
   ///   Entity e = em.createEntity();
-  ///   
+  ///
   /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
   /// At the end it will notify own observers that an eneitty was created.
   Entity createEntity() {
@@ -461,7 +477,8 @@ class EntityManager implements EntityObserver {
     return e;
   }
 
-  void updateUnique<T extends UniqueComponent>(T Function(T old) updateTo) => getUniqueEntity<T>()?.update<T>(updateTo);
+  void updateUnique<T extends UniqueComponent>(T Function(T old) updateTo) =>
+      getUniqueEntity<T>()?.update<T>(updateTo);
 
   /// Sets a unique component on a provided [Entity].
   /// As there can be only one instance of a unique component type, it will first remove old unqiue component.
@@ -506,8 +523,8 @@ class EntityManager implements EntityObserver {
 
   /// Convinience method to call `groupMatching` method.
   /// Creates an instance of [EntityMatcher]
-  Group group({List<Type> all, List<Type> any, List<Type> none}) {
-    var matcher = EntityMatcher(all: all, any: any, none: none);
+  Group group({List<Type> all, List<Type> any, List<Type> none, List<Type> maybe}) {
+    var matcher = EntityMatcher(all: all, any: any, none: none, maybe: maybe);
     return groupMatching(matcher);
   }
 
@@ -554,7 +571,7 @@ class EntityManager implements EntityObserver {
     if (__observerList == null) {
       __observerList = List.unmodifiable(_observers);
     }
-    
+
     return __observerList;
   }
 }
@@ -565,11 +582,12 @@ typedef T KeyProducer<C extends Component, T>(C c);
 /// A class which let users map entities against values of a component.
 /// ### Example
 ///     var nameMap = EntityMap<Name, String>(em, (name) => name.value );
-/// 
+///
 /// An [EntityMap] maps only one entity to a value component.
 /// A situation, where multiple components are matching the same [EntityMap] key is considered an error.
 /// Please use [EntityMultiMap] to cover such scenario.
-class EntityMap<C extends Component, T> implements EntityObserver, EntityManagerObserver {
+class EntityMap<C extends Component, T>
+    implements EntityObserver, EntityManagerObserver {
   // holds entities entities mapped agauinst key
   final Map<T, Entity> _entities = Map();
   // holds key producer instance
@@ -603,11 +621,12 @@ class EntityMap<C extends Component, T> implements EntityObserver, EntityManager
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC is C || newC is C) {
-      if(oldC != null) {
+      if (oldC != null) {
         _entities.remove(_keyProducer(oldC));
       }
-      if (newC != null ) {
-        assert(_entities[_keyProducer(newC)] == null, "Multiple values for same key are prohibited in EntityMap, please use EntityMultiMap instead.");
+      if (newC != null) {
+        assert(_entities[_keyProducer(newC)] == null,
+            "Multiple values for same key are prohibited in EntityMap, please use EntityMultiMap instead.");
         _entities[_keyProducer(newC)] = e;
       }
     }
@@ -627,9 +646,10 @@ class EntityMap<C extends Component, T> implements EntityObserver, EntityManager
 /// A class which let users map entities against values of a component.
 /// ### Example
 ///     var ageMap = EntityMultiMap<Age, int>(em, (name) => name.value);
-/// 
+///
 /// It is different from [EntityMap] in a way that it lets multiple entities match agains the same key.
-class EntityMultiMap<C extends Component, T> implements EntityObserver, EntityManagerObserver {
+class EntityMultiMap<C extends Component, T>
+    implements EntityObserver, EntityManagerObserver {
   // holds list of entities mapped against key
   final Map<T, List<Entity>> _entities = Map();
   // holds key producer
@@ -663,10 +683,10 @@ class EntityMultiMap<C extends Component, T> implements EntityObserver, EntityMa
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC is C || newC is C) {
-      if(oldC != null) {
+      if (oldC != null) {
         _entities[_keyProducer(oldC)]?.remove(e);
       }
-      if (newC != null ) {
+      if (newC != null) {
         var list = _entities[_keyProducer(newC)] ?? List();
         list.add(e);
         _entities[_keyProducer(newC)] = list;
