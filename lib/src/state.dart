@@ -211,10 +211,10 @@ class EntityMatcher {
           List<Type> any,
           List<Type> maybe}) =>
       EntityMatcher(
-          all: all ?? _all,
-          none: none ?? _none,
-          any: any ?? _any,
-          maybe: maybe ?? _maybe);
+          all: all ?? _all.toList(),
+          none: none ?? _none.toList(),
+          any: any ?? _any.toList(),
+          maybe: maybe ?? _maybe.toList());
 
   EntityMatcher extend(
           {List<Type> all,
@@ -222,10 +222,10 @@ class EntityMatcher {
           List<Type> any,
           List<Type> maybe}) =>
       EntityMatcher(
-          all: all ?? Set.of(_all..addAll(all)),
-          none: none ?? Set.of(_none..addAll(none)),
-          any: any ?? Set.of(_any..addAll(any)),
-          maybe: maybe ?? Set.of(_maybe..addAll(maybe)));
+          all: [..._all.toList(), if (all != null) ...all],
+          none: [..._none.toList(), if (none != null) ...none],
+          any: [..._any.toList(), if (any != null) ...any],
+          maybe: [..._maybe.toList(), if (maybe != null) ...maybe]);
 
   /// Checks if the [Entity] contains necessary components.
   bool matches(Entity e) {
