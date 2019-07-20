@@ -194,7 +194,8 @@ class EntityMatcher {
   final Set<Type> _any;
   final Set<Type> _none;
   final Set<Type> _maybe;
-  EntityMatcher({List<Type> all, List<Type> any, List<Type> none, List<Type> maybe})
+  EntityMatcher(
+      {List<Type> all, List<Type> any, List<Type> none, List<Type> maybe})
       : _all = Set.of(all ?? []),
         _any = Set.of(any ?? []),
         _none = Set.of(none ?? []),
@@ -203,6 +204,28 @@ class EntityMatcher {
         (_all != null && _all.length > 0) || (_any != null && _any.length > 0),
         "Matcher needs to have all or any present");
   }
+
+  EntityMatcher copyWith(
+          {List<Type> all,
+          List<Type> none,
+          List<Type> any,
+          List<Type> maybe}) =>
+      EntityMatcher(
+          all: all ?? _all,
+          none: none ?? _none,
+          any: any ?? _any,
+          maybe: maybe ?? _maybe);
+
+  EntityMatcher extend(
+          {List<Type> all,
+          List<Type> none,
+          List<Type> any,
+          List<Type> maybe}) =>
+      EntityMatcher(
+          all: all ?? Set.of(_all..addAll(all)),
+          none: none ?? Set.of(_none..addAll(none)),
+          any: any ?? Set.of(_any..addAll(any)),
+          maybe: maybe ?? Set.of(_maybe..addAll(maybe)));
 
   /// Checks if the [Entity] contains necessary components.
   bool matches(Entity e) {
@@ -229,7 +252,10 @@ class EntityMatcher {
 
   /// Checks if `all`, `any` or `none` contains given type.
   bool containsType(Type t) {
-    return _all.contains(t) || _any.contains(t) || _none.contains(t) || _maybe.contains(t);
+    return _all.contains(t) ||
+        _any.contains(t) ||
+        _none.contains(t) ||
+        _maybe.contains(t);
   }
 
   /// Matcher are equal if their `all`, `any`, `none` sets overlap.
@@ -237,13 +263,15 @@ class EntityMatcher {
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is EntityMatcher &&
-          runtimeType == other.runtimeType &&
-          _all.length == other._all.length &&
-          _any.length == other._any.length &&
-          _none.length == other._none.length &&
-          _all.difference(other._all).isEmpty &&
-          _any.difference(other._any).isEmpty &&
-          _none.difference(other._none).isEmpty);
+              runtimeType == other.runtimeType &&
+              _all.length == other._all.length &&
+              _any.length == other._any.length &&
+              _none.length == other._none.length &&
+              _maybe.length == other._maybe.length &&
+              _all.difference(other._all).isEmpty &&
+              _any.difference(other._any).isEmpty &&
+              _none.difference(other._none).isEmpty) &&
+          _maybe.difference(other._maybe).isEmpty;
 
   /// Different matchers with same `all`, `any`, `none` need to return equal hash code.
   @override
@@ -251,7 +279,8 @@ class EntityMatcher {
     var a = _all.fold(0, (int sum, Type t) => t.hashCode ^ sum);
     var b = _any.fold(a << 4, (int sum, Type t) => t.hashCode ^ sum);
     var c = _none.fold(b << 4, (int sum, Type t) => t.hashCode ^ sum);
-    return c;
+    var d = _maybe.fold(c << 4, (int sum, Type t) => t.hashCode ^ sum);
+    return d;
   }
 }
 
@@ -523,7 +552,8 @@ class EntityManager implements EntityObserver {
 
   /// Convinience method to call `groupMatching` method.
   /// Creates an instance of [EntityMatcher]
-  Group group({List<Type> all, List<Type> any, List<Type> none, List<Type> maybe}) {
+  Group group(
+      {List<Type> all, List<Type> any, List<Type> none, List<Type> maybe}) {
     var matcher = EntityMatcher(all: all, any: any, none: none, maybe: maybe);
     return groupMatching(matcher);
   }
