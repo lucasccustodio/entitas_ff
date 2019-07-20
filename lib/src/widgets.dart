@@ -29,8 +29,6 @@ class EntityManagerProvider extends InheritedWidget {
     Key key,
     @required FeatureSystem system,
     @required Widget child,
-    FeatureLifecycleCallback onCreate,
-    FeatureLifecycleCallback onDispose,
   })  : assert(child != null),
         _entityManager = null,
         child = _FeatureSystemWidget(child: child, system: system),
@@ -122,11 +120,11 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
 
   @override
   void initState() {
+    super.initState();
     widget.system.onCreate();
     widget.system.init();
     _ticker = createTicker(tick);
     _ticker.start();
-    super.initState();
   }
 
   @override
