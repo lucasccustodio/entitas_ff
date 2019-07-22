@@ -9,6 +9,7 @@ typedef EntityBackedAnimatedBuilder<T>(
 /// Modified [EntityObservingWidget] that also plays an animation
 class EntityObservingAnimatedWidget<T> extends StatefulWidget {
   final EntityProvider provider;
+  final EntityProvider fallback;
   final EntityBackedAnimatedBuilder<T> builder;
   final Tween<T> animation;
   final Curve curve;
@@ -32,7 +33,8 @@ class EntityObservingAnimatedWidget<T> extends StatefulWidget {
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
       this.reverse,
-      this.shouldAnimate})
+      this.shouldAnimate,
+      this.fallback})
       : super(key: key);
 
   @override
@@ -53,7 +55,7 @@ class _EntityObservingAnimatedWidgetState<T>
   void initState() {
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
-        setState((){});
+        setState(() {});
       });
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
@@ -68,7 +70,14 @@ class _EntityObservingAnimatedWidgetState<T>
         "$widget is not a child of EntityObservingAnimatedWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) _entity.addObserver(this);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    } else {
+      _entity = widget.fallback?.call(manager);
+      if (_entity != null) {
+        _entity.addObserver(this);
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -79,7 +88,14 @@ class _EntityObservingAnimatedWidgetState<T>
         "$widget is not a child of EntityObservingAnimatedWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) _entity.addObserver(this);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    } else {
+      _entity = widget.fallback?.call(manager);
+      if (_entity != null) {
+        _entity.addObserver(this);
+      }
+    }
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
@@ -125,6 +141,7 @@ typedef EntityBackedAnimationsBuilder(
 /// Modified version of [EntityObservingAnimatedWidget] for multiple animations
 class EntityObservingAnimationsWidget extends StatefulWidget {
   final EntityProvider provider;
+  final EntityProvider fallback;
   final EntityBackedAnimationsBuilder builder;
   final Map<String, Tween> animations;
   final Curve curve;
@@ -143,6 +160,7 @@ class EntityObservingAnimationsWidget extends StatefulWidget {
     this.duration = const Duration(milliseconds: 300),
     this.reverse,
     this.shouldAnimate,
+    this.fallback,
   }) : super(key: key);
 
   @override
@@ -163,7 +181,7 @@ class _EntityObservingAnimationsWidgetState
   void initState() {
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
-        setState((){});
+        setState(() {});
       });
     _animations = widget.animations.map((name, anim) =>
         MapEntry<String, Animation>(
@@ -181,7 +199,14 @@ class _EntityObservingAnimationsWidgetState
         "$widget is not a child of EntityObservingAnimationsWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) _entity.addObserver(this);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    } else {
+      _entity = widget.fallback?.call(manager);
+      if (_entity != null) {
+        _entity.addObserver(this);
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -192,7 +217,14 @@ class _EntityObservingAnimationsWidgetState
         "$widget is not a child of EntityObservingAnimationsWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) _entity.addObserver(this);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    } else {
+      _entity = widget.fallback?.call(manager);
+      if (_entity != null) {
+        _entity.addObserver(this);
+      }
+    }
     _animations = widget.animations.map((name, anim) =>
         MapEntry<String, Animation>(
             name,
@@ -244,9 +276,11 @@ typedef Map<String, Entity> EntityMapProvider(EntityManager em);
 /// Modified version of [EntityObservingWidget] that can observe multiple [Entity]s
 class EntityMapObservingWidget extends StatefulWidget {
   final EntityMapProvider provider;
+  final EntityMapProvider fallback;
   final EntityMapBackedWidgetBuilder builder;
 
-  const EntityMapObservingWidget({Key key, this.provider, this.builder})
+  const EntityMapObservingWidget(
+      {Key key, this.provider, this.builder, this.fallback})
       : super(key: key);
 
   @override
@@ -266,7 +300,14 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
         manager != null, "$widget is not a child of EntityMapObservingWidget");
     _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
+    }
     super.didUpdateWidget(oldWidget);
   }
 
@@ -277,7 +318,14 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
         manager != null, "$widget is not a child of EntityMapObservingWidget");
     _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -303,7 +351,7 @@ class _EntityMapObservingWidgetState extends State<EntityMapObservingWidget>
   }
 
   void _update() {
-    setState((){});
+    setState(() {});
   }
 }
 
@@ -314,6 +362,7 @@ typedef EntityMapBackedAnimatedBuilder<T>(
 /// Modified version of [EntityObservingAnimatedWidget] for maps
 class EntityMapObservingAnimatedWidget<T> extends StatefulWidget {
   final EntityMapProvider provider;
+  final EntityMapProvider fallback;
   final EntityMapBackedAnimatedBuilder<T> builder;
 
   /// [Animation] to play
@@ -343,7 +392,8 @@ class EntityMapObservingAnimatedWidget<T> extends StatefulWidget {
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
       this.reverse,
-      this.shouldAnimate})
+      this.shouldAnimate,
+      this.fallback})
       : super(key: key);
 
   @override
@@ -364,7 +414,7 @@ class _EntityMapObservingAnimatedWidgetState<T>
   void initState() {
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
-        setState((){});
+        setState(() {});
       });
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
@@ -379,7 +429,14 @@ class _EntityMapObservingAnimatedWidgetState<T>
         "$widget is not a child of EntityObservingAnimatedWidget");
     _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -390,7 +447,14 @@ class _EntityMapObservingAnimatedWidgetState<T>
         "$widget is not a child of EntityObservingAnimatedWidget");
     _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
+    }
     _animation = widget.animation
         .animate(CurvedAnimation(parent: _controller, curve: widget.curve));
     if (widget.startAnimating) _controller.forward(from: 0);
@@ -443,6 +507,7 @@ typedef EntityMapBackedAnimationsBuilder(Map<String, Entity> entity,
 /// Modified version of [EntityMapObservingAnimatedBuilder] for multiple animations
 class EntityMapObservingAnimationsWidget extends StatefulWidget {
   final EntityMapProvider provider;
+  final EntityMapProvider fallback;
   final EntityMapBackedAnimationsBuilder builder;
   final Map<String, Tween> animations;
   final Curve curve;
@@ -460,7 +525,8 @@ class EntityMapObservingAnimationsWidget extends StatefulWidget {
       this.curve = Curves.linear,
       this.duration = const Duration(milliseconds: 300),
       this.reverse,
-      this.shouldAnimate})
+      this.shouldAnimate,
+      this.fallback})
       : super(key: key);
 
   @override
@@ -481,7 +547,7 @@ class _EntityMapObservingAnimationsWidgetState<T>
   void initState() {
     _controller = AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
-        setState((){});
+        setState(() {});
       });
 
     _animationsMap = widget.animations.map((name, anim) =>
@@ -500,7 +566,14 @@ class _EntityMapObservingAnimationsWidgetState<T>
         "$widget is not a child of EntityObservingAnimatedWidget");
     _entityMap?.forEach((_, e) => e?.removeObserver(this));
     _entityMap = widget.provider(manager);
-    if (_entityMap != null) _entityMap.forEach((_, e) => e?.addObserver(this));
+    if (_entityMap != null) {
+      _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -518,6 +591,11 @@ class _EntityMapObservingAnimationsWidgetState<T>
     _entityMap = widget.provider(manager);
     if (_entityMap != null) {
       _entityMap.forEach((_, e) => e?.addObserver(this));
+    } else {
+      _entityMap = widget.fallback?.call(manager);
+      if (_entityMap != null) {
+        _entityMap.forEach((_, e) => e?.addObserver(this));
+      }
     }
     if (widget.startAnimating) _controller.forward(from: 0);
     super.didUpdateWidget(oldWidget);

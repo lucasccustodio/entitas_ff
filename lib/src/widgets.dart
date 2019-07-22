@@ -153,11 +153,14 @@ class EntityObservingWidget extends StatefulWidget {
   /// Function which returns an entity the widget should observe.
   final EntityProvider provider;
 
+  /// If provider returns null, use this to initialize the entity to observe.
+  final EntityProvider fallback;
+
   /// Function which builds this widgets child, based on [Entity] and [BuildContext].
   final EntityBackedWidgetBuilder builder;
 
   const EntityObservingWidget(
-      {Key key, @required this.provider, @required this.builder})
+      {Key key, @required this.provider, @required this.builder, this.fallback})
       : super(key: key);
 
   @override
@@ -176,7 +179,14 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     assert(manager != null, "$widget is not a child of EntityObservingWidget");
     _entity?.removeObserver(this);
     _entity = widget.provider(manager);
-    if (_entity != null) _entity.addObserver(this);
+    if (_entity != null) {
+      _entity.addObserver(this);
+    } else {
+      _entity = widget.fallback?.call(manager);
+      if (_entity != null) {
+        _entity.addObserver(this);
+      }
+    }
     super.didChangeDependencies();
   }
 
@@ -292,6 +302,6 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   }
 
   _update() {
-    setState((){});
+    setState(() {});
   }
 }
