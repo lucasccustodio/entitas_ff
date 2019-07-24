@@ -1,10 +1,7 @@
-import 'dart:math';
-
 import 'package:entitas_ff/src/state.dart';
 import 'package:entitas_ff/src/state_extended.dart';
 import 'package:entitas_ff/src/widgets.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 
 /// Defines a function which given an [Entity] (can be `null`), [Tween] and [BuildContext] returns a an instance of [Widget].
 typedef Widget AnimatableEntityWidgetBuilder(
@@ -30,17 +27,12 @@ abstract class AnimatableEntityObservableWidget
 
 mixin AnimatableEntityObservable<T extends AnimatableEntityObservableWidget>
     on State<AnimatableEntityObservingWidget>
-    implements EntityObserver, TickerProvider {
+    implements
+        EntityObserver,
+        SingleTickerProviderStateMixin<AnimatableEntityObservingWidget> {
   Entity _entity;
   Map<String, Animation> _animations;
   AnimationController _controller;
-  Ticker _ticker;
-
-  @override
-  Ticker createTicker(onTick) {
-    _ticker = Ticker(onTick);
-    return _ticker;
-  }
 
   @override
   void didChangeDependencies() {
@@ -49,7 +41,6 @@ mixin AnimatableEntityObservable<T extends AnimatableEntityObservableWidget>
     _entity?.removeObserver(this);
     _entity = widget.provider(entityManager);
     if (_entity != null) _entity.addObserver(this);
-    if (_ticker != null) _ticker.muted = !TickerMode.of(context);
     super.didChangeDependencies();
   }
 
@@ -95,15 +86,15 @@ mixin AnimatableEntityObservable<T extends AnimatableEntityObservableWidget>
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      var animate = widget.animateAdded?.call(newC) ?? 0;
+      var animate = widget.animateAdded?.call(newC) ?? 1;
 
       playAnimation(animate);
     } else if (oldC != null && newC != null) {
-      var animate = widget.animateUpdated?.call(oldC, newC) ?? 0;
+      var animate = widget.animateUpdated?.call(oldC, newC) ?? 1;
 
       playAnimation(animate);
     } else {
-      var animate = widget.animateRemoved?.call(oldC) ?? 0;
+      var animate = widget.animateRemoved?.call(oldC) ?? 1;
 
       playAnimation(animate);
     }
@@ -150,7 +141,7 @@ class AnimatableEntityObservingWidget extends AnimatableEntityObservableWidget {
 
 class AnimatableEntityObservingWidgetState
     extends State<AnimatableEntityObservingWidget>
-    with AnimatableEntityObservable {}
+    with AnimatableEntityObservable, SingleTickerProviderStateMixin {}
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
 typedef EntityMap EntityMapProvider(EntityManager entityManager);
@@ -252,17 +243,12 @@ abstract class AnimatableEntityMapObservableWidget
 mixin AnimatableEntityMapObservable<
         T extends AnimatableEntityMapObservableWidget>
     on State<AnimatableEntityMapObservingWidget>
-    implements EntityObserver, TickerProvider {
+    implements
+        EntityObserver,
+        SingleTickerProviderStateMixin<AnimatableEntityMapObservingWidget> {
   EntityMap _entity;
   Map<String, Animation> _animations;
   AnimationController _controller;
-  Ticker _ticker;
-
-  @override
-  Ticker createTicker(onTick) {
-    _ticker = Ticker(onTick);
-    return _ticker;
-  }
 
   @override
   void didChangeDependencies() {
@@ -271,7 +257,6 @@ mixin AnimatableEntityMapObservable<
     _entity?.removeObserver(this);
     _entity = widget.provider(entityManager);
     if (_entity != null) _entity.addObserver(this);
-    if (_ticker != null) _ticker.muted = !TickerMode.of(context);
     super.didChangeDependencies();
   }
 
@@ -317,15 +302,15 @@ mixin AnimatableEntityMapObservable<
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      var animate = widget.animateAdded?.call(newC) ?? 0;
+      var animate = widget.animateAdded?.call(newC) ?? 1;
 
       playAnimation(animate);
     } else if (oldC != null && newC != null) {
-      var animate = widget.animateUpdated?.call(oldC, newC) ?? 0;
+      var animate = widget.animateUpdated?.call(oldC, newC) ?? 1;
 
       playAnimation(animate);
     } else {
-      var animate = widget.animateRemoved?.call(oldC) ?? 0;
+      var animate = widget.animateRemoved?.call(oldC) ?? 1;
 
       playAnimation(animate);
     }
@@ -373,7 +358,7 @@ class AnimatableEntityMapObservingWidget
 
 class AnimatableEntityMapObservingWidgetState
     extends State<AnimatableEntityMapObservingWidget>
-    with AnimatableEntityMapObservable {}
+    with AnimatableEntityMapObservable, SingleTickerProviderStateMixin {}
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
 typedef EntityList EntityListProvider(EntityManager entityManager);
@@ -476,17 +461,12 @@ abstract class AnimatableEntityListObservableWidget
 mixin AnimatableEntityListObservable<
         T extends AnimatableEntityListObservableWidget>
     on State<AnimatableEntityListObservingWidget>
-    implements EntityObserver, TickerProvider {
+    implements
+        EntityObserver,
+        SingleTickerProviderStateMixin<AnimatableEntityListObservingWidget> {
   EntityList _entity;
   Map<String, Animation> _animations;
   AnimationController _controller;
-  Ticker _ticker;
-
-  @override
-  Ticker createTicker(onTick) {
-    _ticker = Ticker(onTick);
-    return _ticker;
-  }
 
   @override
   void didChangeDependencies() {
@@ -495,7 +475,6 @@ mixin AnimatableEntityListObservable<
     _entity?.removeObserver(this);
     _entity = widget.provider(entityManager);
     if (_entity != null) _entity.addObserver(this);
-    if (_ticker != null) _ticker.muted = !TickerMode.of(context);
     super.didChangeDependencies();
   }
 
@@ -541,15 +520,15 @@ mixin AnimatableEntityListObservable<
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      var animate = widget.animateAdded?.call(newC) ?? 0;
+      var animate = widget.animateAdded?.call(newC) ?? 1;
 
       playAnimation(animate);
     } else if (oldC != null && newC != null) {
-      var animate = widget.animateUpdated?.call(oldC, newC) ?? 0;
+      var animate = widget.animateUpdated?.call(oldC, newC) ?? 1;
 
       playAnimation(animate);
     } else {
-      var animate = widget.animateRemoved?.call(oldC) ?? 0;
+      var animate = widget.animateRemoved?.call(oldC) ?? 1;
 
       playAnimation(animate);
     }
@@ -597,4 +576,4 @@ class AnimatableEntityListObservingWidget
 
 class AnimatableEntityListObservingWidgetState
     extends State<AnimatableEntityListObservingWidget>
-    with AnimatableEntityListObservable {}
+    with AnimatableEntityListObservable, SingleTickerProviderStateMixin {}
