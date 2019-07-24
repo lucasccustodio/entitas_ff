@@ -78,9 +78,9 @@ mixin AnimatableEntityObservable<T extends AnimatableEntityObservableWidget>
     if (direction == 0)
       return;
     else if (direction > 0)
-      _controller.forward(from: 1);
+      _controller.forward(from: 0);
     else
-      _controller.reverse(from: 0);
+      _controller.reverse(from: 1);
   }
 
   @override
@@ -294,9 +294,9 @@ mixin AnimatableEntityMapObservable<
     if (direction == 0)
       return;
     else if (direction > 0)
-      _controller.forward(from: 1);
+      _controller.forward(from: 0);
     else
-      _controller.reverse(from: 0);
+      _controller.reverse(from: 1);
   }
 
   @override
@@ -512,9 +512,9 @@ mixin AnimatableEntityListObservable<
     if (direction == 0)
       return;
     else if (direction > 0)
-      _controller.forward(from: 1);
+      _controller.forward(from: 0);
     else
-      _controller.reverse(from: 0);
+      _controller.reverse(from: 1);
   }
 
   @override
