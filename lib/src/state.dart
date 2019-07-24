@@ -188,6 +188,46 @@ class Entity extends ObservableEntity {
   }
 }
 
+class EntityMap implements ObservableEntity {
+  Map<String, Entity> _entityMap;
+
+  EntityMap({Map<String, Entity> entityMap}) : _entityMap = entityMap;
+
+  Entity operator [](String name) => entities[name];
+
+  Map<String, Entity> get entities => Map.unmodifiable(_entityMap);
+
+  @override
+  addObserver(EntityObserver o) {
+    _entityMap.forEach((_, e) => e?.addObserver(o));
+  }
+
+  @override
+  removeObserver(EntityObserver o) {
+    _entityMap.forEach((_, e) => e?.removeObserver(o));
+  }
+}
+
+class EntityList implements ObservableEntity {
+  List<Entity> _entityList;
+
+  EntityList({List<Entity> entityList}) : _entityList = entityList;
+
+  List<Entity> get entities => List.unmodifiable(_entityList);
+
+  Entity operator [](int index) => entities[index];
+
+  @override
+  addObserver(EntityObserver o) {
+    _entityList.forEach((e) => e?.addObserver(o));
+  }
+
+  @override
+  removeObserver(EntityObserver o) {
+    _entityList.forEach((e) => e?.removeObserver(o));
+  }
+}
+
 /// EntityMatcher can be understood as a query. It can be used to checks if an [Entity] complies with provided rules.
 /// ### Example
 ///   var matcher = EntityMatcher(all: [A, B], any: [C, D] none: [E])
@@ -549,6 +589,31 @@ class EntityManager implements EntityObserver {
   T getUnique<T extends UniqueComponent>() {
     return _uniqueEntities[T]?.get<T>();
   }
+
+  /// Returns an [EntityList] instance of the unique entities specified in types.
+  EntityList getUniques(List<Type> types) {
+    var entityList = <Entity>[];
+
+    for (var type in types) {
+      entityList.add(getUniqueEntityT(type));
+    }
+
+    return EntityList(entityList: entityList);
+  }
+
+  /// Returns an [EntityMap] instance of the unique entities specified in types.
+  EntityMap getUniquesNamed(Map<String, Type> types) {
+    var entityMap = <String, Entity>{};
+
+    types.forEach((name, type) =>
+        entityMap.putIfAbsent(name, () => getUniqueEntityT(type)));
+
+    return EntityMap(entityMap: entityMap);
+  }
+
+  Entity getUniqueEntityT(Type t) => _uniqueEntities[t];
+
+  Type typeOf<T>(T o) => T;
 
   /// Returns [Entity] instance which hold the unique component, or `null`.
   Entity getUniqueEntity<T extends UniqueComponent>() {

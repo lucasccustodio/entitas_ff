@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'components.dart';
 
 main() {
-  testWidgets('EntityListObservingWidget', (tester) async {
+  testWidgets('EntityObservingWidget [EntityList]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -19,7 +19,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: EntityListObservingWidget(
+          home: EntityObservingWidget(
             provider: (em) => EntityList(entityList: [
               em.getUniqueEntity<CounterComponent>(),
               em.getUniqueEntity<Score>()
@@ -72,7 +72,7 @@ main() {
     expect(find.text("Score: 2"), findsOneWidget);
   });
 
-  testWidgets('EntityMapObservingWidget', (tester) async {
+  testWidgets('EntityObservingWidget [EntityMap]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -86,7 +86,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: EntityMapObservingWidget(
+          home: EntityObservingWidget(
             provider: (em) => EntityMap(entityMap: {
               'counter': em.getUniqueEntity<CounterComponent>(),
               'score': em.getUniqueEntity<Score>()
@@ -143,7 +143,7 @@ main() {
     expect(find.text("Score: 2"), findsOneWidget);
   });
 
-  testWidgets('AnimatableEntityObservingWidget', (tester) async {
+  testWidgets('AnimatableEntityObservingWidget [Entity]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -157,7 +157,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget(
+          home: AnimatableEntityObservingWidget<Entity>(
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
@@ -185,13 +185,13 @@ main() {
         (old) => CounterComponent(old.counter + 1));
 
     /// Advance until animation is completed
-    await tester.pumpAndSettle();
+    await tester.pump(Duration(milliseconds: 2500));
 
     /// Now counter's text should be at 1
     expect(find.text("Counter: 1"), findsOneWidget);
 
     /// Now animation should be completed
-    expect(find.text("Animation: 100"), findsOneWidget);
+    expect(find.text("Animation: 50"), findsOneWidget);
 
     /// Set counter back to 0
     testEntityManager.setUnique(CounterComponent(0));
@@ -206,7 +206,7 @@ main() {
     expect(find.text("Animation: 0"), findsOneWidget);
   });
 
-  testWidgets('AnimatableEntityMapObservingWidget', (tester) async {
+  testWidgets('AnimatableEntityObservingWidget [EntityMap]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -220,7 +220,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityMapObservingWidget(
+          home: AnimatableEntityObservingWidget<EntityMap>(
             provider: (em) => EntityMap(entityMap: {
               'counter': em.getUniqueEntity<CounterComponent>(),
               'score': em.getUniqueEntity<Score>()
@@ -274,7 +274,7 @@ main() {
     expect(find.text("Animation: 0"), findsOneWidget);
   });
 
-  testWidgets('AnimatableEntityListObservingWidget', (tester) async {
+  testWidgets('AnimatableEntityObservingWidget [EntityList]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -288,7 +288,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityListObservingWidget(
+          home: AnimatableEntityObservingWidget<EntityList>(
             provider: (em) => EntityList(entityList: [
               em.getUniqueEntity<CounterComponent>(),
               em.getUniqueEntity<Score>()

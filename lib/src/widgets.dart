@@ -71,6 +71,7 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
 
   @override
   void initState() {
+    widget.system.onCreate();
     widget.system.init();
     _ticker = createTicker(tick);
     _ticker.start();
@@ -82,6 +83,7 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
     _ticker.stop();
     _ticker.dispose();
     widget.system.exit();
+    Future.delayed(Duration.zero, () => widget.system.onDestroy());
     super.dispose();
   }
 
@@ -143,31 +145,22 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
 }
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
-typedef Entity EntityProvider(EntityManager entityManager);
+typedef T EntityProvider<T extends ObservableEntity>(
+    EntityManager entityManager);
 
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
-typedef Widget EntityWidgetBuilder(Entity e, BuildContext context);
+typedef Widget EntityWidgetBuilder<T extends ObservableEntity>(
+    T e, BuildContext context);
 
-abstract class BaseEntityObservableWidget extends StatefulWidget {
-  final EntityProvider provider;
-  final EntityWidgetBuilder builder;
-
-  const BaseEntityObservableWidget(
-      {Key key, @required this.provider, @required this.builder})
-      : super(key: key);
+/// Base class for [EntityObservingWidget]
+abstract class EntityObservableWidget<T extends ObservableEntity>
+    extends StatefulWidget {
+  final EntityProvider<T> provider = null;
 }
 
-abstract class EntityObservableWidget extends BaseEntityObservableWidget {
-  const EntityObservableWidget(
-      {Key key,
-      @required EntityProvider provider,
-      @required EntityWidgetBuilder builder})
-      : super(key: key, provider: provider, builder: builder);
-}
-
-mixin EntityObservable<T extends EntityObservableWidget> on State<T>
-    implements EntityObserver {
-  Entity _entity;
+mixin EntityWidget<T extends EntityObservableWidget<E>,
+    E extends ObservableEntity> on State<T> implements EntityObserver {
+  E _entity;
 
   @override
   void didChangeDependencies() {
@@ -180,13 +173,31 @@ mixin EntityObservable<T extends EntityObservableWidget> on State<T>
   }
 
   @override
-  Widget build(BuildContext context) {
-    return widget.builder(_entity, context);
+  void dispose() {
+    _entity?.removeObserver(this);
+    super.dispose();
   }
+}
+
+/// Widget that rebuilds when its [Entity] reference add, update or remove a [Component], that also can play one or more [Animation]s according to the result of animateAdded, animateUpdated and animateRemoved respectively.
+class EntityObservingWidget<E extends ObservableEntity>
+    extends EntityObservableWidget<E> {
+  final EntityProvider<E> provider;
+  final EntityWidgetBuilder<E> builder;
+
+  EntityObservingWidget({Key key, this.provider, this.builder});
 
   @override
-  exchanged(Entity e, Component oldC, Component newC) {
-    _update();
+  EntityObservingWidgetState<EntityObservingWidget<E>, E> createState() =>
+      EntityObservingWidgetState();
+}
+
+/// State class for [AnimatableEntityObservingWidget]
+class EntityObservingWidgetState<T extends EntityObservingWidget<E>,
+    E extends ObservableEntity> extends State<T> with EntityWidget {
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entity, context);
   }
 
   @override
@@ -194,46 +205,155 @@ mixin EntityObservable<T extends EntityObservableWidget> on State<T>
     _update();
   }
 
+  @override
+  exchanged(Entity e, Component oldC, Component newC) {
+    _update();
+  }
+
   _update() {
     setState(() {});
+  }
+}
+
+/// Given an [Entity] reference, a [Map] of [Animation]s and a [BuildContext], produces a animated [Widget];
+typedef Widget AnimatableEntityWidgetBuilder<T extends ObservableEntity>(
+    T entity, Map<String, Animation> animations, BuildContext context);
+
+/// Base class for [AnimatableEntityObservingWidget]
+abstract class AnimatableObservableWidget<T extends ObservableEntity>
+    extends EntityObservableWidget<T> {
+  final AnimatableEntityWidgetBuilder<T> builder = null;
+  final Map<String, Tween> tweens = null;
+  final bool startAnimating = true;
+  final Curve curve = Curves.linear;
+  final Duration duration = const Duration(milliseconds: 300);
+  final double Function(Component addedC) animateAdded = null;
+  final double Function(Component removedC) animateRemoved = null;
+  final double Function(Component oldC, Component newC) animateUpdated = null;
+}
+
+/// Mixin for [AnimatableEntityObservingWidget]
+mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
+    implements EntityObserver, SingleTickerProviderStateMixin<T> {
+  Map<String, Animation> _animations;
+  AnimationController _controller;
+
+  @override
+  void didUpdateWidget(AnimatableObservableWidget oldWidget) {
+    updateAnimations();
+    super.didUpdateWidget(oldWidget);
+  }
+
+  void updateAnimations() {
+    _animations = widget.tweens.map((name, tween) =>
+        MapEntry<String, Animation>(
+            name,
+            tween.animate(
+                CurvedAnimation(parent: _controller, curve: widget.curve))));
+    if (widget.startAnimating) _controller.forward(from: 0);
+  }
+
+  @override
+  void initState() {
+    _controller = AnimationController(vsync: this, duration: widget.duration)
+      ..addListener(() {
+        setState(() {});
+      });
+    updateAnimations();
+    super.initState();
+  }
+
+  void playAnimation(double direction) {
+    if (direction == 0)
+      return;
+    else if (direction > 0)
+      _controller.forward(from: 0);
+    else
+      _controller.reverse(from: 1);
+  }
+
+  @override
+  exchanged(ObservableEntity e, Component oldC, Component newC) {
+    if (oldC == null && newC != null) {
+      var animate = widget.animateAdded?.call(newC) ?? 1;
+
+      playAnimation(animate);
+    } else if (oldC != null && newC != null) {
+      var animate = widget.animateUpdated?.call(oldC, newC) ?? 1;
+
+      playAnimation(animate);
+    } else {
+      var animate = widget.animateRemoved?.call(oldC) ?? 1;
+
+      playAnimation(animate);
+    }
+  }
+
+  @override
+  destroyed(ObservableEntity e) {
+    _controller.reset();
   }
 
   @override
   void dispose() {
-    _entity?.removeObserver(this);
+    _controller.dispose();
     super.dispose();
   }
 }
 
-class EntityObservingWidget extends EntityObservableWidget {
-  EntityObservingWidget({EntityProvider provider, EntityWidgetBuilder builder})
-      : super(provider: provider, builder: builder);
+/// Widget that rebuilds when its [Entity] reference add, update or remove a [Component], that also can play one or more [Animation]s according to the result of animateAdded, animateUpdated and animateRemoved respectively.
+class AnimatableEntityObservingWidget<E extends ObservableEntity>
+    extends AnimatableObservableWidget<E> {
+  final Duration duration;
+  final Curve curve;
+  final Map<String, Tween> tweens;
+  final bool startAnimating;
+  final double Function(Component addedC) animateAdded;
+  final double Function(Component removedC) animateRemoved;
+  final double Function(Component oldC, Component newC) animateUpdated;
+  final EntityProvider<E> provider;
+  final AnimatableEntityWidgetBuilder<E> builder;
+
+  AnimatableEntityObservingWidget(
+      {this.curve = Curves.linear,
+      this.duration = const Duration(milliseconds: 300),
+      @required this.tweens,
+      this.startAnimating = true,
+      this.animateAdded,
+      this.animateRemoved,
+      this.animateUpdated,
+      this.provider,
+      this.builder});
 
   @override
-  EntityObservingWidgetState createState() => EntityObservingWidgetState();
+  AnimatableEntityObservingWidgetState<AnimatableEntityObservingWidget<E>, E>
+      createState() => AnimatableEntityObservingWidgetState();
 }
 
-class EntityObservingWidgetState extends State<EntityObservingWidget>
-    with EntityObservable {}
+/// State class for [AnimatableEntityObservingWidget]
+class AnimatableEntityObservingWidgetState<
+        T extends AnimatableEntityObservingWidget<E>,
+        E extends ObservableEntity> extends State<T>
+    with
+        EntityWidget,
+        AnimatableEntityWidget,
+        SingleTickerProviderStateMixin<T> {
+  @override
+  Widget build(BuildContext context) {
+    return widget.builder(_entity, _animations, context);
+  }
+}
 
 /// Defines a function which given a [EntityGroup] instance and [BuildContext] returns an instance of a [Widget].
 typedef Widget GroupWidgetBuilder(EntityGroup group, BuildContext context);
 
-abstract class BaseGroupObservableWidget extends StatefulWidget {
+abstract class GroupObservableWidget extends StatefulWidget {
   final EntityMatcher matcher;
   final GroupWidgetBuilder builder;
 
-  const BaseGroupObservableWidget(
+  const GroupObservableWidget(
       {Key key, @required this.matcher, @required this.builder})
       : super(key: key);
-}
-
-abstract class GroupObservableWidget extends BaseGroupObservableWidget {
-  const GroupObservableWidget(
-      {Key key,
-      @required EntityMatcher matcher,
-      @required GroupWidgetBuilder builder})
-      : super(key: key, matcher: matcher, builder: builder);
 }
 
 mixin GroupObservable<T extends GroupObservableWidget> on State<T>

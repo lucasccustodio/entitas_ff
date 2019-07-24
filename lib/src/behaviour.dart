@@ -226,6 +226,9 @@ abstract class TriggeredSystem extends EntityManagerSystem
 
 abstract class EntitySystem {}
 
+/// Defines a callback for [RootSystem] that receives its [EntityManager] and allows for configuration when the [RootSystem] is built.
+typedef void RootLifecycleCallback(EntityManager entityManager);
+
 /// RootSystem can be considered as a parent node in an hierarchy of systems.
 /// It implements all the important system interfaces and is executed as all of them.
 /// On creation [RootSystem] is provided with an instance of [EntityManager] and a list of child systems.
@@ -246,8 +249,17 @@ class RootSystem extends EntitySystem
   // holds reference to [EntityManager] instance
   final EntityManager _entityManager;
 
+  RootLifecycleCallback _onCreate;
+  RootLifecycleCallback _onDestroy;
+
+  onCreate() => _onCreate?.call(_entityManager);
+  onDestroy() => _onDestroy?.call(_entityManager);
+
   RootSystem(
-      {@required EntityManager entityManager, List<System> systems = const []})
+      {@required EntityManager entityManager,
+      List<System> systems = const [],
+      RootLifecycleCallback onCreate,
+      RootLifecycleCallback onDestroy})
       : _entityManager = entityManager {
     for (var s in systems) {
       if (s is EntityManagerSystem) {
@@ -317,9 +329,17 @@ class ReactiveRootSystem extends RootSystem
   // holds a flag which defines if `cleanup` method on children should be called
   var _shouldCleanup = false;
 
-  ReactiveRootSystem(EntityManager entityManager, List<System> systems,
-      {List<Type> blackList})
-      : super(entityManager: entityManager, systems: systems) {
+  ReactiveRootSystem(
+      {@required EntityManager entityManager,
+      List<System> systems = const [],
+      List<Type> blackList,
+      RootLifecycleCallback onCreate,
+      RootLifecycleCallback onDestroy})
+      : super(
+            entityManager: entityManager,
+            systems: systems,
+            onCreate: onCreate,
+            onDestroy: onDestroy) {
     _blackList = Set.from(blackList ?? []);
     entityManager.addObserver(this);
   }
@@ -334,14 +354,14 @@ class ReactiveRootSystem extends RootSystem
   /// Implementation of [EntityObserver].
   /// Please don't call directly.
   @override
-  destroyed(Entity e) {
+  destroyed(ObservableEntity e) {
     e.removeObserver(this);
   }
 
   /// Implementation of [EntityObserver].
   /// Please don't call directly.
   @override
-  exchanged(Entity e, Component oldC, Component newC) {
+  exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (_shouldExecute) {
       return;
     }

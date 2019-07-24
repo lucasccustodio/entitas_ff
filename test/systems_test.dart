@@ -112,7 +112,8 @@ void main() {
 
   test('Interactive Move System', () {
     var em = EntityManager();
-    var root = ReactiveRootSystem(em, [_InteractiveMoveSystem()]);
+    var root = ReactiveRootSystem(
+        entityManager: em, systems: [_InteractiveMoveSystem()]);
 
     var e1 = em.createEntity()..set(Position(0, 0));
 
@@ -162,7 +163,8 @@ void main() {
 
   test('Triggered Move System', () {
     var em = EntityManager();
-    var root = ReactiveRootSystem(em, [_TriggeredMoveSystem()]);
+    var root = ReactiveRootSystem(
+        entityManager: em, systems: [_TriggeredMoveSystem()]);
 
     var e1 = em.createEntity()..set(Position(0, 0));
 
@@ -227,8 +229,7 @@ void main() {
     /// Feature's counter starts at 1
     expect(feature.entityManager.getUnique<CounterComponent>().counter, 1);
 
-    for (var i = 0; i < 5; i++)
-    feature.execute();
+    for (var i = 0; i < 5; i++) feature.execute();
 
     /// Feature's counter incremented by 5
     expect(feature.entityManager.getUnique<CounterComponent>().counter, 6);

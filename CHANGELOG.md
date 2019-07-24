@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2
+- Got rid of all Entity\*ObservingWidget & AnimatableEntity\*ObservingWidget and refactored them to use generics instead which makes it alot easier to add more ObservableEntity variants wihtout needing to make more widgets.
+- Added onCreate and onDestroyed lifecycle callbacks to RootSystem and ReactiveRootSystem.
+
 ## 0.2.1
 - Refactored and improved all widgets, systems and tests
 
