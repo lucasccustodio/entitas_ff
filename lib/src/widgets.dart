@@ -146,58 +146,37 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
 typedef Entity EntityProvider(EntityManager entityManager);
 
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
-typedef Widget EntityBackedWidgetBuilder(Entity e, BuildContext context);
+typedef Widget EntityWidgetBuilder(Entity e, BuildContext context);
 
-/// Widget which observes an entity and rebuilds it's child when the entity has changed.
-class EntityObservingWidget extends StatefulWidget {
-  /// Function which returns an entity the widget should observe.
+abstract class BaseEntityObservableWidget extends StatefulWidget {
   final EntityProvider provider;
+  final EntityWidgetBuilder builder;
 
-  /// If provider returns null, use this to initialize the entity to observe.
-  final EntityProvider fallback;
-
-  /// Function which builds this widgets child, based on [Entity] and [BuildContext].
-  final EntityBackedWidgetBuilder builder;
-
-  const EntityObservingWidget(
-      {Key key, @required this.provider, @required this.builder, this.fallback})
+  const BaseEntityObservableWidget(
+      {Key key, @required this.provider, @required this.builder})
       : super(key: key);
-
-  @override
-  State<StatefulWidget> createState() => EntityObservingWidgetState();
 }
 
-/// State class for [EntityObservingWidget].
-class EntityObservingWidgetState extends State<EntityObservingWidget>
+abstract class EntityObservableWidget extends BaseEntityObservableWidget {
+  const EntityObservableWidget(
+      {Key key,
+      @required EntityProvider provider,
+      @required EntityWidgetBuilder builder})
+      : super(key: key, provider: provider, builder: builder);
+}
+
+mixin EntityObservable<T extends EntityObservableWidget> on State<T>
     implements EntityObserver {
-  // holds reference to entity under observation
   Entity _entity;
 
   @override
   void didChangeDependencies() {
-    var manager = EntityManagerProvider.of(context).entityManager;
-    assert(manager != null, "$widget is not a child of EntityObservingWidget");
+    var entityManager = EntityManagerProvider.of(context).entityManager;
+    assert(entityManager != null);
     _entity?.removeObserver(this);
-    _entity = widget.provider(manager);
-    if (_entity != null) {
-      _entity.addObserver(this);
-    } else {
-      _entity = widget.fallback?.call(manager);
-      if (_entity != null) {
-        _entity.addObserver(this);
-      }
-    }
-    super.didChangeDependencies();
-  }
-
-  @override
-  void didUpdateWidget(EntityObservingWidget oldWidget) {
-    var manager = EntityManagerProvider.of(context).entityManager;
-    assert(manager != null, "$widget is not a child of EntityObservingWidget");
-    _entity?.removeObserver(this);
-    _entity = widget.provider(manager);
+    _entity = widget.provider(entityManager);
     if (_entity != null) _entity.addObserver(this);
-    super.didUpdateWidget(oldWidget);
+    super.didChangeDependencies();
   }
 
   @override
@@ -205,15 +184,13 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     return widget.builder(_entity, context);
   }
 
-  /// Implementation of [EntityObserver]
   @override
-  destroyed(Entity e) {
+  exchanged(Entity e, Component oldC, Component newC) {
     _update();
   }
 
-  /// Implementation of [EntityObserver]
   @override
-  exchanged(Entity e, Component oldC, Component newC) {
+  destroyed(Entity e) {
     _update();
   }
 
@@ -228,29 +205,40 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   }
 }
 
-/// Defines a function which given a [Group] instance and [BuildContext] returns an instance of a [Widget].
-typedef Widget GroupBackedWidgetBuilder(Group group, BuildContext context);
-
-/// Widget which observes a group and rebuilds it's child when the group has changed.
-class GroupObservingWidget extends StatefulWidget {
-  /// holds reference to provided matcher
-  final EntityMatcher matcher;
-
-  /// holds reference to function which builds the child [Widget]
-  final GroupBackedWidgetBuilder builder;
-
-  const GroupObservingWidget(
-      {Key key, @required this.matcher, @required this.builder})
-      : super(key: key);
+class EntityObservingWidget extends EntityObservableWidget {
+  EntityObservingWidget({EntityProvider provider, EntityWidgetBuilder builder})
+      : super(provider: provider, builder: builder);
 
   @override
-  State<StatefulWidget> createState() => GroupObservingWidgetState();
+  EntityObservingWidgetState createState() => EntityObservingWidgetState();
 }
 
-class GroupObservingWidgetState extends State<GroupObservingWidget>
+class EntityObservingWidgetState extends State<EntityObservingWidget>
+    with EntityObservable {}
+
+/// Defines a function which given a [EntityGroup] instance and [BuildContext] returns an instance of a [Widget].
+typedef Widget GroupWidgetBuilder(EntityGroup group, BuildContext context);
+
+abstract class BaseGroupObservableWidget extends StatefulWidget {
+  final EntityMatcher matcher;
+  final GroupWidgetBuilder builder;
+
+  const BaseGroupObservableWidget(
+      {Key key, @required this.matcher, @required this.builder})
+      : super(key: key);
+}
+
+abstract class GroupObservableWidget extends BaseGroupObservableWidget {
+  const GroupObservableWidget(
+      {Key key,
+      @required EntityMatcher matcher,
+      @required GroupWidgetBuilder builder})
+      : super(key: key, matcher: matcher, builder: builder);
+}
+
+mixin GroupObservable<T extends GroupObservableWidget> on State<T>
     implements GroupObserver {
-  // holds reference to group under observation
-  Group _group;
+  EntityGroup _group;
 
   @override
   void didChangeDependencies() {
@@ -263,45 +251,43 @@ class GroupObservingWidgetState extends State<GroupObservingWidget>
   }
 
   @override
-  void didUpdateWidget(GroupObservingWidget oldWidget) {
-    var manager = EntityManagerProvider.of(context).entityManager;
-    assert(manager != null, "$widget is not a child of GroupObservingWidget");
-    _group?.removeObserver(this);
-    _group = manager.groupMatching(widget.matcher);
-    _group.addObserver(this);
-    super.didUpdateWidget(oldWidget);
-  }
-
-  @override
   Widget build(BuildContext context) {
     return widget.builder(_group, context);
-  }
-
-  @override
-  void dispose() {
-    _group.removeObserver(this);
-    super.dispose();
-  }
-
-  /// Implementation of [GroupObserver]
-  @override
-  added(Group group, Entity entity) {
-    _update();
-  }
-
-  /// Implementation of [GroupObserver]
-  @override
-  removed(Group group, Entity entity) {
-    _update();
-  }
-
-  /// Implementation of [GroupObserver]
-  @override
-  updated(Group group, Entity entity) {
-    _update();
   }
 
   _update() {
     setState(() {});
   }
+
+  @override
+  added(EntityGroup group, Entity entity) {
+    _update();
+  }
+
+  @override
+  removed(EntityGroup group, Entity entity) {
+    _update();
+  }
+
+  @override
+  updated(EntityGroup group, Entity entity) {
+    _update();
+  }
+
+  @override
+  void dispose() {
+    _group?.removeObserver(this);
+    super.dispose();
+  }
 }
+
+class GroupObservingWidget extends GroupObservableWidget {
+  GroupObservingWidget({EntityMatcher matcher, GroupWidgetBuilder builder})
+      : super(matcher: matcher, builder: builder);
+
+  @override
+  GroupObservingWidgetState createState() => GroupObservingWidgetState();
+}
+
+class GroupObservingWidgetState extends State<GroupObservingWidget>
+    with GroupObservable {}

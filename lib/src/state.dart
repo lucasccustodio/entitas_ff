@@ -33,12 +33,17 @@ abstract class EntityObserver {
   exchanged(Entity e, Component oldC, Component newC);
 }
 
+abstract class ObservableEntity {
+  void addObserver(EntityObserver o);
+  void removeObserver(EntityObserver o);
+}
+
 /// Class which represents an entity instance.
 /// An instance of an entity can be created only through an [EntityManger].
 /// ### Example
 ///   EntityManager em = EntityManager();
 ///   Entity e = em.createEntity();
-class Entity {
+class Entity extends ObservableEntity {
   Entity._(this.creationIndex, this._mainObserver);
 
   /// Creation Index is assigned by the [EntityManager] on creation and can be seen as a sequential id of an entity.
@@ -284,11 +289,11 @@ class EntityMatcher {
   }
 }
 
-/// Interface which you need to implement, if you want to observe changes on [Group] instance
+/// Interface which you need to implement, if you want to observe changes on [EntityGroup] instance
 abstract class GroupObserver {
-  added(Group group, Entity entity);
-  updated(Group group, Entity entity);
-  removed(Group group, Entity entity);
+  added(EntityGroup group, Entity entity);
+  updated(EntityGroup group, Entity entity);
+  removed(EntityGroup group, Entity entity);
 }
 
 /// Group represent a collection of entities, which match a given [EntityMatcher] and is always up to date.
@@ -310,7 +315,7 @@ abstract class GroupObserver {
 ///
 /// Groups are observable, see `addObserver`, `removeObserver`.
 /// In order to access the entities of the group you need to call `entities` getter
-class Group implements EntityObserver {
+class EntityGroup implements EntityObserver {
   // References to entities matching the `matcher` are stored as a [Set]
   Set<Entity> _entities = new Set();
   // References to group observers.
@@ -319,7 +324,7 @@ class Group implements EntityObserver {
   /// Matcher which is used to check the compliance of the entities.
   final EntityMatcher matcher;
 
-  Group._(this.matcher) : assert(matcher != null);
+  EntityGroup._(this.matcher) : assert(matcher != null);
 
   /// Adds observer to the group which will be notified on every mutating action.
   /// Observers are stored in a [Set].
@@ -413,7 +418,7 @@ class Group implements EntityObserver {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is Group &&
+      other is EntityGroup &&
           runtimeType == other.runtimeType &&
           matcher == other.matcher;
 
@@ -446,7 +451,7 @@ class EntityManager implements EntityObserver {
   // holds all entities mapped by creation id.
   final Map<int, Entity> _entities = Map();
   // holds all groups mapped by entity matcher.
-  final Map<EntityMatcher, Group> _groupsByMatcher = Map();
+  final Map<EntityMatcher, EntityGroup> _groupsByMatcher = Map();
   // holds all unique entities mapped to unique component type
   final Map<Type, Entity> _uniqueEntities = Map();
   // holds observers
@@ -552,7 +557,7 @@ class EntityManager implements EntityObserver {
 
   /// Convinience method to call `groupMatching` method.
   /// Creates an instance of [EntityMatcher]
-  Group group(
+  EntityGroup group(
       {List<Type> all, List<Type> any, List<Type> none, List<Type> maybe}) {
     var matcher = EntityMatcher(all: all, any: any, none: none, maybe: maybe);
     return groupMatching(matcher);
@@ -562,13 +567,13 @@ class EntityManager implements EntityObserver {
   /// [EntityMatcher] instance should not be `null`.
   /// It is safe to call this method multiple times as the groups are cached and user will receive same cached instance.
   /// If a new group needs to be created it will be directly populated by existing matching entities.
-  Group groupMatching(EntityMatcher matcher) {
+  EntityGroup groupMatching(EntityMatcher matcher) {
     assert(matcher != null);
     var group = _groupsByMatcher[matcher];
     if (group != null) {
       return group;
     }
-    group = Group._(matcher);
+    group = EntityGroup._(matcher);
     for (var e in _entities.values) {
       e.addObserver(group);
       if (matcher.matches(e)) {
@@ -611,18 +616,18 @@ typedef T KeyProducer<C extends Component, T>(C c);
 
 /// A class which let users map entities against values of a component.
 /// ### Example
-///     var nameMap = EntityMap<Name, String>(em, (name) => name.value );
+///     var nameMap = EntityIndex<Name, String>(em, (name) => name.value );
 ///
-/// An [EntityMap] maps only one entity to a value component.
-/// A situation, where multiple components are matching the same [EntityMap] key is considered an error.
-/// Please use [EntityMultiMap] to cover such scenario.
-class EntityMap<C extends Component, T>
+/// An [EntityIndex] maps only one entity to a value component.
+/// A situation, where multiple components are matching the same [EntityIndex] key is considered an error.
+/// Please use [EntityMultiIndex] to cover such scenario.
+class EntityIndex<C extends Component, T>
     implements EntityObserver, EntityManagerObserver {
   // holds entities entities mapped agauinst key
   final Map<T, Entity> _entities = Map();
   // holds key producer instance
   final KeyProducer<C, T> _keyProducer;
-  EntityMap(EntityManager entityManager, this._keyProducer) {
+  EntityIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
     for (var e in entityManager.entities) {
       e.addObserver(this);
@@ -632,21 +637,21 @@ class EntityMap<C extends Component, T>
     }
   }
 
-  /// EntityMap is an [EntityManagerListener], this is an implementation of this protocol.
+  /// EntityIndex is an [EntityManagerListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   entityCreated(Entity e) {
     e.addObserver(this);
   }
 
-  /// EntityMap is an [EntityListener], this is an implementation of this protocol.
+  /// EntityIndex is an [EntityListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   destroyed(Entity e) {
     e.removeObserver(this);
   }
 
-  /// EntityMap is an [EntityListener], this is an implementation of this protocol.
+  /// EntityIndex is an [EntityListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   exchanged(Entity e, Component oldC, Component newC) {
@@ -656,7 +661,7 @@ class EntityMap<C extends Component, T>
       }
       if (newC != null) {
         assert(_entities[_keyProducer(newC)] == null,
-            "Multiple values for same key are prohibited in EntityMap, please use EntityMultiMap instead.");
+            "Multiple values for same key are prohibited in EntityIndex, please use EntityMultiMap instead.");
         _entities[_keyProducer(newC)] = e;
       }
     }
@@ -677,14 +682,14 @@ class EntityMap<C extends Component, T>
 /// ### Example
 ///     var ageMap = EntityMultiMap<Age, int>(em, (name) => name.value);
 ///
-/// It is different from [EntityMap] in a way that it lets multiple entities match agains the same key.
-class EntityMultiMap<C extends Component, T>
+/// It is different from [EntityIndex] in a way that it lets multiple entities match agains the same key.
+class EntityMultiIndex<C extends Component, T>
     implements EntityObserver, EntityManagerObserver {
   // holds list of entities mapped against key
   final Map<T, List<Entity>> _entities = Map();
   // holds key producer
   final KeyProducer<C, T> _keyProducer;
-  EntityMultiMap(EntityManager entityManager, this._keyProducer) {
+  EntityMultiIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
     for (var e in entityManager.entities) {
       e.addObserver(this);

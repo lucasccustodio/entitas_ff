@@ -3,10 +3,10 @@ authors:
 - Maxim Zaks <maxim.zaks@gmail.com>
 description: Entitas for Flutter
 homepage: https://github.com/mzaks/entitas_ff
-version: 0.1.2
+version: 0.2.1
 
 environment:
-  sdk: '>=2.1.0 <3.0.0'
+  sdk: '>=2.2.2 <3.0.0'
 
 dependencies:
   flutter:

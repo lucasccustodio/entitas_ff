@@ -34,4 +34,40 @@ void main() {
     expect(EntityMatcher(all: [Name, Age], any: [Position, Velocity]).containsType(Selected), false);
     expect(EntityMatcher(all: [Name, Age], any: [Position, Velocity], none: [Selected]).containsType(Selected), true);
   });
+
+  test('Matcher copyWith', (){
+    var entityManager = EntityManager();
+
+    var entity = entityManager.createEntity()
+    ..set(Name(''))
+    ..set(Age(0));
+
+    var matcher = EntityMatcher(all: [Name, Age]);
+
+    expect(matcher.matches(entity), true);
+
+    var matcherExcludingAge = matcher.copyWith(all: [Name], none: [Age]);
+
+    expect(matcher.hashCode != matcherExcludingAge.hashCode, true);
+
+    expect(matcherExcludingAge.matches(entity), false);
+  });
+
+  test('Matcher extend', (){
+    var entityManager = EntityManager();
+
+    var entity = entityManager.createEntity()
+    ..set(Name(''))
+    ..set(Age(0));
+
+    var matcher = EntityMatcher(all: [Name, Age]);
+
+    expect(matcher.matches(entity), true);
+
+    var matcherWithSelected = matcher.extend(all: [Selected]);
+
+    expect(matcher.hashCode != matcherWithSelected.hashCode, true);
+
+    expect(matcherWithSelected.matches(entity), false);
+  });
 }

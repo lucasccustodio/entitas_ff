@@ -7,7 +7,7 @@ void main() {
     EntityManager em = EntityManager();
     em.createEntity()..set(Name("Max"))..set(Age(37));
 
-    var nameMap = EntityMap<Name, String>(em, (name) => name.value );
+    var nameMap = EntityIndex<Name, String>(em, (name) => name.value );
 
     em.createEntity()..set(Name("Alex"))..set(Age(45));
 
@@ -20,7 +20,7 @@ void main() {
     em.createEntity()..set(Name("Max"))..set(Age(37));
     em.createEntity()..set(Name("Maxim"))..set(Age(45));
 
-    var ageMap = EntityMultiMap<Age, int>(em, (name) => name.value );
+    var ageMap = EntityMultiIndex<Age, int>(em, (name) => name.value );
 
     em.createEntity()..set(Name("Alex"))..set(Age(37));
 

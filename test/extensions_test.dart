@@ -32,7 +32,7 @@ main() {
     for (var i = 0; i < 20; i++)
       entityManager.createEntity()..set(Name("Ent$i"))..set(Age(i));
 
-    var map = EntityMap<Name, String>(entityManager, (name) => name.value);
+    var map = EntityIndex<Name, String>(entityManager, (name) => name.value);
 
     expect(entityManager.groupMatching(matcher).entities.length, 20);
 
@@ -48,4 +48,23 @@ main() {
 
     expect(entityManager.groupMatching(matcher).entities.length, 19);
   });
+
+  /* flutterTest.testWidgets('fallback when null', (tester) async {
+    var entityManager = EntityManager();
+
+    await tester.pumpWidget(EntityManagerProvider(
+      entityManager: entityManager,
+      child: MaterialApp(
+        home: EntityObservingWidget(
+          provider: (em) => em.getUniqueEntity<CounterComponent>(),
+          builder: (e, context) =>
+              Text("Counter: ${e.get<CounterComponent>().counter}"),
+        ),
+      ),
+    ));
+
+    await tester.pump(Duration.zero);
+
+    expect(flutterTest.find.text("Counter: 0"), flutterTest.findsOneWidget);
+  }); */
 }

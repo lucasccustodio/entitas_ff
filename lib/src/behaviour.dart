@@ -59,7 +59,7 @@ enum GroupChangeEvent { added, updated, removed, addedOrUpdated, any }
 abstract class ReactiveSystem extends EntityManagerSystem
     implements ExecuteSystem, GroupObserver {
   // holds the group the reactive system is observing
-  Group _group;
+  EntityGroup _group;
   // holds references to entities which changed since last execution
   Set<Entity> _collectedEntities = Set();
 
@@ -77,7 +77,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   }
 
   /// Override of [EntityManagerSystem] class method.
-  /// This is where the [Group] instance is provided and the system starts observing the group.
+  /// This is where the [EntityGroup] instance is provided and the system starts observing the group.
   @override
   set _manager(EntityManager m) {
     super._manager = m;
@@ -90,7 +90,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
-  added(Group group, Entity entity) {
+  added(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.added ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -101,7 +101,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
-  updated(Group group, Entity entity) {
+  updated(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.updated ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -112,7 +112,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
-  removed(Group group, Entity entity) {
+  removed(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.removed || event == GroupChangeEvent.any) {
       _collectedEntities.add(entity);
     }
@@ -155,7 +155,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
 abstract class TriggeredSystem extends EntityManagerSystem
     implements ExecuteSystem, GroupObserver {
   // holds the group the system is observing
-  Group _group;
+  EntityGroup _group;
   // holds the flag if the system should be executed this time
   bool _triggered = false;
 
@@ -173,7 +173,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   }
 
   /// Override of [EntityManagerSystem] class method.
-  /// This is where the [Group] instance is provided and the system starts observing the group.
+  /// This is where the [EntityGroup] instance is provided and the system starts observing the group.
   @override
   set _manager(EntityManager m) {
     super._manager = m;
@@ -186,7 +186,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
-  added(Group group, Entity entity) {
+  added(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.added ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -197,7 +197,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
-  updated(Group group, Entity entity) {
+  updated(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.updated ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -208,7 +208,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Implementation of [GroupObserver].
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
-  removed(Group group, Entity entity) {
+  removed(EntityGroup group, Entity entity) {
     if (event == GroupChangeEvent.removed || event == GroupChangeEvent.any) {
       _triggered = true;
     }

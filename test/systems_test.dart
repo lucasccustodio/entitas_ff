@@ -4,7 +4,7 @@ import 'components.dart';
 
 class _MoveSystem extends EntityManagerSystem
     implements InitSystem, ExecuteSystem, CleanupSystem {
-  Group _movable;
+  EntityGroup _movable;
   @override
   init() {
     _movable = entityManager.group(all: [Position, Velocity]);
@@ -59,7 +59,7 @@ class _TriggeredMoveSystem extends TriggeredSystem implements InitSystem {
   @override
   EntityMatcher get matcher => EntityMatcher(all: [Selected]);
 
-  Group _movable;
+  EntityGroup _movable;
   @override
   init() {
     _movable = entityManager.group(all: [Position]);

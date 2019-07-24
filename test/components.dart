@@ -6,6 +6,8 @@ class CounterComponent extends UniqueComponent {
   CounterComponent(this.counter);
 }
 
+class Visible implements Component {}
+
 class Name implements Component {
   final String value;
 

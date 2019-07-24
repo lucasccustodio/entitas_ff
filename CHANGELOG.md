@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.1
+- Refactored and improved all widgets, systems and tests
+
 ## 0.1.2
 - Added FeatureSystem
 - Improved documentation
@@ -11,7 +14,7 @@
 
 ## 0.1.1+2
 - Minor optimization by overring didChangeDependencies and didUpdateWidget
-- Added EntityMapObservingWidget, EntityMapObservingAnimatedWidget, EntityMapObservingAnimationsWidget and many other animation-related widgets
+- Added EntityIndexObservingWidget, EntityIndexObservingAnimatedWidget, EntityIndexObservingAnimationsWidget and many other animation-related widgets
 
 ## 0.1.1+1
 - Introduce the ExitSystem interface to call exit() when the application is terminated
