@@ -161,14 +161,19 @@ main() {
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
-            animateUpdated: (oldC, newC) =>
-                (newC is CounterComponent && newC.counter == 0) ? -1 : 0,
-            builder: (entity, animations, context) => Column(
-              children: <Widget>[
-                Text("Counter: ${entity.get<CounterComponent>().counter}"),
-                Text("Animation: ${animations['counter'].value}")
-              ],
-            ),
+            animateUpdated: (oldC, newC) {
+              return (newC is CounterComponent && newC.counter == 0)
+                  ? false
+                  : true;
+            },
+            builder: (entity, animations, context) {
+              return Column(
+                children: <Widget>[
+                  Text("Counter: ${entity.get<CounterComponent>().counter}"),
+                  Text("Animation: ${animations['counter'].value}")
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -185,13 +190,13 @@ main() {
         (old) => CounterComponent(old.counter + 1));
 
     /// Advance until animation is completed
-    await tester.pump(Duration(milliseconds: 2500));
+    await tester.pumpAndSettle();
 
     /// Now counter's text should be at 1
     expect(find.text("Counter: 1"), findsOneWidget);
 
     /// Now animation should be completed
-    expect(find.text("Animation: 50"), findsOneWidget);
+    expect(find.text("Animation: 100"), findsOneWidget);
 
     /// Set counter back to 0
     testEntityManager.setUnique(CounterComponent(0));
@@ -228,7 +233,7 @@ main() {
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
             animateUpdated: (oldC, newC) =>
-                (newC is CounterComponent && newC.counter == 0) ? -1 : 0,
+                (newC is CounterComponent && newC.counter == 0) ? false : true,
             builder: (entity, animations, context) => Column(
               children: <Widget>[
                 Text(
@@ -296,7 +301,7 @@ main() {
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
             animateUpdated: (oldC, newC) =>
-                (newC is CounterComponent && newC.counter == 0) ? -1 : 0,
+                (newC is CounterComponent && newC.counter == 0) ? false : true,
             builder: (entity, animations, context) => Column(
               children: <Widget>[
                 Text("Counter: ${entity[0].get<CounterComponent>().counter}"),

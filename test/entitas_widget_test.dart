@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:entitas_ff/entitas_ff.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'components.dart';
+
 //An UniqueComponent can only be held by a single entity at a time
 class TestComponent extends UniqueComponent {
   final int counter;
@@ -74,6 +76,187 @@ void main() async {
 
     /// Now counter's text should be at 1
     expect(find.text("Counter: 1"), findsOneWidget);
+  });
+
+  testWidgets('EntityObservingWidget.extended rebuild only updated',
+      (widgetTester) async {
+    /// Instantiate our EntityManager
+    var testEntityManager = EntityManager();
+
+    /// Instantiate TestComponent and set counter to 0
+    testEntityManager.setUnique(TestComponent(0));
+
+    /// Pump our EntityManagerProvider
+    await widgetTester.pumpWidget(EntityManagerProvider(
+        entityManager: testEntityManager,
+        child: MaterialApp(
+          home: EntityObservingWidget<Entity>.extended(
+            rebuildAdded: (_) => false,
+            rebuildRemoved: (_) => false,
+            rebuildUpdated: (_, __) => true,
+            provider: (em) => em.getUniqueEntity<TestComponent>(),
+            builder: (entity, context) => Column(
+              children: <Widget>[
+                Text("Counter: ${entity.get<TestComponent>().counter}"),
+                if (entity.hasT<IsSelected>())
+                  Text("Selected: ${entity.get<IsSelected>().value}")
+              ],
+            ),
+          ),
+        )));
+
+    /// By default counter text at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// By default no selected text
+    expect(find.text("Selected: false"), findsNothing);
+
+    /// Add IsSelected
+    testEntityManager.getUniqueEntity<TestComponent>().set(IsSelected(false));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Still no selected text
+    expect(find.text("Selected: false"), findsNothing);
+
+    /// Update IsSelected
+    testEntityManager.getUniqueEntity<TestComponent>()..set(IsSelected(true));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Now selected text is visible and updated
+    expect(find.text("Selected: true"), findsOneWidget);
+  });
+
+  testWidgets('EntityObservingWidget.extended rebuild only added',
+      (widgetTester) async {
+    /// Instantiate our EntityManager
+    var testEntityManager = EntityManager();
+
+    /// Instantiate TestComponent and set counter to 0
+    testEntityManager.setUnique(TestComponent(0));
+
+    /// Pump our EntityManagerProvider
+    await widgetTester.pumpWidget(
+      EntityManagerProvider(
+        entityManager: testEntityManager,
+        child: MaterialApp(
+          home: EntityObservingWidget<Entity>.extended(
+            rebuildAdded: (c) => c is IsSelected,
+            rebuildUpdated: (_, __) => false,
+            provider: (em) => em.getUniqueEntity<TestComponent>(),
+            builder: (entity, context) => Column(
+              children: <Widget>[
+                Text("Counter: ${entity.get<TestComponent>().counter}"),
+                if (entity.hasT<IsSelected>())
+                  Text("Selected: ${entity.get<IsSelected>().value}")
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    /// By default counter should be at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// By default counter should be at 0
+    expect(find.text("Selected: false"), findsNothing);
+
+    /// Increase the counter
+    testEntityManager
+        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Now counter's text should still be at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// Increase the counter
+    testEntityManager.getUniqueEntity<TestComponent>().set(IsSelected());
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Now should have a selected text
+    expect(find.text("Selected: false"), findsOneWidget);
+
+    /// Updated selected
+    testEntityManager.getUniqueEntity<TestComponent>().set(IsSelected(true));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Should still be false
+    expect(find.text("Selected: true"), findsNothing);
+  });
+
+  testWidgets('EntityObservingWidget.extended rebuild only removed',
+      (widgetTester) async {
+    /// Instantiate our EntityManager
+    var testEntityManager = EntityManager();
+
+    /// Instantiate TestComponent and set counter to 0
+    testEntityManager.setUnique(TestComponent(0))..set(IsSelected(true));
+
+    /// Pump our EntityManagerProvider
+    await widgetTester.pumpWidget(
+      EntityManagerProvider(
+        entityManager: testEntityManager,
+        child: MaterialApp(
+          home: EntityObservingWidget<Entity>.extended(
+            rebuildRemoved: (c) => c is IsSelected,
+            rebuildAdded: (c) => false,
+            rebuildUpdated: (_, __) => false,
+            provider: (em) => em.getUniqueEntity<TestComponent>(),
+            builder: (entity, context) => Column(
+              children: <Widget>[
+                Text("Counter: ${entity.get<TestComponent>().counter}"),
+                if (entity.hasT<IsSelected>())
+                  Text("Selected: ${entity.get<IsSelected>().value}")
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    /// By default counter should be at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// By default counter should be at 0
+    expect(find.text("Selected: true"), findsOneWidget);
+
+    /// Increase the counter
+    testEntityManager
+        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Now counter's text should still be at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// Increase the counter
+    testEntityManager.getUniqueEntity<TestComponent>().remove<IsSelected>();
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Now should have a selected text
+    expect(find.text("Selected: true"), findsNothing);
+
+    /// Updated selected
+    testEntityManager.getUniqueEntity<TestComponent>().set(IsSelected(false));
+
+    /// Advance one frame
+    await widgetTester.pump(Duration.zero);
+
+    /// Should still be false
+    expect(find.text("Selected: false"), findsNothing);
   });
 
   testWidgets('GroupObservingWidget', (widgetTester) async {

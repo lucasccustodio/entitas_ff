@@ -20,6 +20,12 @@ class Age implements Component {
   Age(this.value);
 }
 
+class IsSelected extends Component {
+  final bool value;
+
+  IsSelected([this.value = false]);
+}
+
 class Selected implements UniqueComponent {}
 
 class Score implements UniqueComponent {
