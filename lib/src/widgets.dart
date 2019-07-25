@@ -157,6 +157,10 @@ typedef bool ComponentUpdatedCallback(Component oldC, Component newC);
 /// Callback for when [Component] is removed;
 typedef bool ComponentRemovedCallback(Component c);
 
+bool _defaultComponentAdded(Component c) => true;
+bool _defaultComponentRemoved(Component c) => true;
+bool _defaultComponentUpdated(Component c, Component c2) => true;
+
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
 typedef Widget EntityWidgetBuilder<T extends ObservableEntity>(
     T e, BuildContext context);
@@ -198,19 +202,23 @@ class EntityObservingWidget<E extends ObservableEntity>
   final ComponentUpdatedCallback rebuildUpdated;
 
   EntityObservingWidget({Key key, this.provider, this.builder})
-      : rebuildAdded = null,
-        rebuildUpdated = null,
-        rebuildRemoved = null;
+      : rebuildAdded = _defaultComponentAdded,
+        rebuildUpdated = _defaultComponentUpdated,
+        rebuildRemoved = _defaultComponentRemoved;
 
   /// Variant that provides finer control over when to rebuild according to the result of each callback respectively.
-  EntityObservingWidget.extended({this.provider, this.builder, this.rebuildAdded,
-      this.rebuildUpdated, this.rebuildRemoved});
+  EntityObservingWidget.extended(
+      {this.provider,
+      this.builder,
+      this.rebuildAdded,
+      this.rebuildUpdated,
+      this.rebuildRemoved});
 
   @override
   EntityObservingWidgetState<E> createState() => EntityObservingWidgetState();
 }
 
-/// State class for [AnimatableEntityObservingWidget]
+/// State class for [EntityObservingWidget]
 class EntityObservingWidgetState<E extends ObservableEntity>
     extends State<EntityObservingWidget<E>> with EntityWidget {
   @override
@@ -226,13 +234,13 @@ class EntityObservingWidgetState<E extends ObservableEntity>
   @override
   exchanged(Entity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      var rebuildAdded = widget.rebuildAdded?.call(newC) ?? true;
+      var rebuildAdded = widget.rebuildAdded(newC);
       if (rebuildAdded) _update();
     } else if (oldC != null && newC != null) {
-      var rebuildUpdated = widget.rebuildUpdated?.call(oldC, newC) ?? true;
+      var rebuildUpdated = widget.rebuildUpdated(oldC, newC);
       if (rebuildUpdated) _update();
     } else {
-      var rebuildRemoved = widget.rebuildRemoved?.call(oldC) ?? true;
+      var rebuildRemoved = widget.rebuildRemoved(oldC);
       if (rebuildRemoved) _update();
     }
   }
@@ -313,15 +321,15 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
   @override
   exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      var animate = widget.animateAdded?.call(newC) ?? true;
+      var animate = widget.animateAdded(newC);
 
       playAnimation(animate);
     } else if (oldC != null && newC != null) {
-      var animate = widget.animateUpdated?.call(oldC, newC) ?? true;
+      var animate = widget.animateUpdated(oldC, newC);
 
       playAnimation(animate);
     } else {
-      var animate = widget.animateRemoved?.call(oldC) ?? true;
+      var animate = widget.animateRemoved(oldC);
 
       playAnimation(animate);
     }
@@ -358,9 +366,9 @@ class AnimatableEntityObservingWidget<E extends ObservableEntity>
       this.duration = const Duration(milliseconds: 300),
       @required this.tweens,
       this.startAnimating = true,
-      this.animateAdded,
-      this.animateRemoved,
-      this.animateUpdated,
+      this.animateAdded = _defaultComponentAdded,
+      this.animateRemoved = _defaultComponentRemoved,
+      this.animateUpdated = _defaultComponentUpdated,
       this.controller,
       @required this.provider,
       @required this.builder});
@@ -377,8 +385,7 @@ class AnimatableEntityObservingWidgetState<
     with
         EntityWidget<T, E>,
         SingleTickerProviderStateMixin<T>,
-        AnimatableEntityWidget<T, E> {
-}
+        AnimatableEntityWidget<T, E> {}
 
 /// Defines a function which given a [EntityGroup] instance and [BuildContext] returns an instance of a [Widget].
 typedef Widget GroupWidgetBuilder(EntityGroup group, BuildContext context);
