@@ -280,11 +280,11 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
 
   @override
   void didUpdateWidget(AnimatableObservableWidget oldWidget) {
-    updateAnimations();
+    _updateAnimations();
     super.didUpdateWidget(oldWidget);
   }
 
-  void updateAnimations() {
+  void _updateAnimations() {
     _animations = widget.tweens.map((name, tween) =>
         MapEntry<String, Animation>(
             name,
@@ -300,7 +300,7 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
       ..addListener(() {
         setState(() {});
       });
-    updateAnimations();
+    _updateAnimations();
     super.initState();
   }
 
@@ -309,9 +309,11 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
     return widget.builder(_entity, _animations, context);
   }
 
-  void playAnimation(bool forward) {
+  void _updateButNotAnimate() => setState(() {});
+
+  void _playAnimation(bool forward) {
     if (forward == null)
-      return;
+      return _updateButNotAnimate();
     else if (forward)
       _controller.forward(from: 0);
     else
@@ -323,15 +325,15 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
     if (oldC == null && newC != null) {
       var animate = widget.animateAdded(newC);
 
-      playAnimation(animate);
+      _playAnimation(animate);
     } else if (oldC != null && newC != null) {
       var animate = widget.animateUpdated(oldC, newC);
 
-      playAnimation(animate);
+      _playAnimation(animate);
     } else {
       var animate = widget.animateRemoved(oldC);
 
-      playAnimation(animate);
+      _playAnimation(animate);
     }
   }
 

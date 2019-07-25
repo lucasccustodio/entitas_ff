@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.2+3
+- Fixed another bug related to the new callbacks where returning `null` would still trigger a rebuild/animate
+
 ## 0.2.2+2
 - Fixed a bug related to the new callbacks where returning `null` would still trigger a rebuild/animate
 
