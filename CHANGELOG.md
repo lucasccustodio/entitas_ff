@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.2+2
+- Fixed a bug related to the new callbacks where returning `null` would still trigger a rebuild/animate
+
+## 0.2.2+1
+- Added an extended constructor to both EntityObservingWidget and AnimatableEntityObservingWidget that exposes the callbacks to decide whether or not rebuild/animate.
+- Bug-fixes, more tests and some cleanup.
+
 ## 0.2.2
 - Got rid of all Entity\*ObservingWidget & AnimatableEntity\*ObservingWidget and refactored them to use generics instead which makes it alot easier to add more ObservableEntity variants wihtout needing to make more widgets.
 - Added onCreate and onDestroyed lifecycle callbacks to RootSystem and ReactiveRootSystem.
