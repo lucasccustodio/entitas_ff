@@ -161,7 +161,7 @@ main() {
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
-            animateUpdated: (oldC, newC) {
+            animateUpdated: (_, oldC, newC) {
               return (newC is CounterComponent && newC.counter == 0)
                   ? false
                   : true;
@@ -231,13 +231,18 @@ main() {
               'score': em.getUniqueEntity<Score>()
             }),
             duration: Duration(seconds: 5),
+            startAnimating: false,
             tweens: {'counter': IntTween(begin: 0, end: 100)},
-            animateUpdated: (oldC, newC) =>
-                (newC is CounterComponent && newC.counter == 0) ? false : true,
+            animateUpdated: (_, oldC, newC) {
+              if (newC is Score && newC.value != 0) return null;
+
+              return true;
+            },
             builder: (entity, animations, context) => Column(
               children: <Widget>[
-                Text(
-                    "Counter: ${entity['counter'].get<CounterComponent>().counter}"),
+                if (entity['score'].get<Score>().value == 0)
+                  Text(
+                      "Counter: ${entity['counter'].get<CounterComponent>().counter}"),
                 Text("Score: ${entity['score'].get<Score>().value}"),
                 Text("Animation: ${animations['counter'].value}")
               ],
@@ -254,20 +259,19 @@ main() {
     expect(find.text("Animation: 0"), findsOneWidget);
 
     /// Increase the counter
-    testEntityManager.updateUnique<CounterComponent>(
-        (old) => CounterComponent(old.counter + 1));
+    testEntityManager.updateUnique<Score>((old) => Score(old.value + 1));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();
 
     /// Now counter's text should be at 1
-    expect(find.text("Counter: 1"), findsOneWidget);
+    expect(find.text("Counter: 0"), findsNothing);
 
-    /// Now animation should be completed
-    expect(find.text("Animation: 100"), findsOneWidget);
+    /// Now animation should be still
+    expect(find.text("Animation: 0"), findsOneWidget);
 
-    /// Set counter back to 0
-    testEntityManager.setUnique(CounterComponent(0));
+    /// Set score Back to 0
+    testEntityManager.setUnique(Score(0));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();
@@ -276,7 +280,7 @@ main() {
     expect(find.text("Counter: 0"), findsOneWidget);
 
     /// Now animation should have completed at reverse
-    expect(find.text("Animation: 0"), findsOneWidget);
+    expect(find.text("Animation: 100"), findsOneWidget);
   });
 
   testWidgets('AnimatableEntityObservingWidget [EntityList]', (tester) async {
@@ -300,7 +304,7 @@ main() {
             ]),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
-            animateUpdated: (oldC, newC) =>
+            animateUpdated: (_, oldC, newC) =>
                 (newC is CounterComponent && newC.counter == 0) ? false : true,
             builder: (entity, animations, context) => Column(
               children: <Widget>[

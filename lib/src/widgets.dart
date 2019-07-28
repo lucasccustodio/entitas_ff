@@ -149,17 +149,18 @@ typedef T EntityProvider<T extends ObservableEntity>(
     EntityManager entityManager);
 
 /// Callback for when a [Component] is added.
-typedef bool ComponentAddedCallback(Component c);
+typedef bool ComponentAddedCallback(dynamic tag, Component c);
 
 /// Callback for when a [Component] is updated;
-typedef bool ComponentUpdatedCallback(Component oldC, Component newC);
+typedef bool ComponentUpdatedCallback(
+    dynamic tag, Component oldC, Component newC);
 
 /// Callback for when [Component] is removed;
-typedef bool ComponentRemovedCallback(Component c);
+typedef bool ComponentRemovedCallback(dynamic tag, Component c);
 
-bool _defaultComponentAdded(Component c) => true;
-bool _defaultComponentRemoved(Component c) => true;
-bool _defaultComponentUpdated(Component c, Component c2) => true;
+bool _defaultComponentAdded(dynamic tag, Component c) => true;
+bool _defaultComponentRemoved(dynamic tag, Component c) => true;
+bool _defaultComponentUpdated(dynamic tag, Component c, Component c2) => true;
 
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
 typedef Widget EntityWidgetBuilder<T extends ObservableEntity>(
@@ -233,14 +234,19 @@ class EntityObservingWidgetState<E extends ObservableEntity>
 
   @override
   exchanged(Entity e, Component oldC, Component newC) {
+    dynamic tag;
+    if (super._entity is EntityMap)
+      tag = _nameFromMap(super._entity as EntityMap, e);
+    else if (super._entity is Entity)
+      tag = _indexFromList(super._entity as EntityList, e);
     if (oldC == null && newC != null) {
-      var rebuildAdded = widget.rebuildAdded(newC);
+      var rebuildAdded = widget.rebuildAdded(tag, newC);
       if (rebuildAdded) _update();
     } else if (oldC != null && newC != null) {
-      var rebuildUpdated = widget.rebuildUpdated(oldC, newC);
+      var rebuildUpdated = widget.rebuildUpdated(tag, oldC, newC);
       if (rebuildUpdated) _update();
     } else {
-      var rebuildRemoved = widget.rebuildRemoved(oldC);
+      var rebuildRemoved = widget.rebuildRemoved(tag, oldC);
       if (rebuildRemoved) _update();
     }
   }
@@ -248,6 +254,20 @@ class EntityObservingWidgetState<E extends ObservableEntity>
   _update() {
     setState(() {});
   }
+}
+
+String _nameFromMap(EntityMap map, Entity e) {
+  for (var entry in map.entities.entries)
+    if (entry.value == e) return entry.key;
+
+  return null;
+}
+
+int _indexFromList(EntityList list, Entity e) {
+  for (int i = 0; i < list.entities.length; i++)
+    if (list.entities[i] == e) return i;
+
+  return null;
 }
 
 /// Given an [Entity] reference, a [Map] of [Animation]s and a [BuildContext], produces a animated [Widget];
@@ -322,16 +342,20 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
 
   @override
   exchanged(ObservableEntity e, Component oldC, Component newC) {
+    dynamic tag;
+    if (_entity is EntityMap)
+      tag = _nameFromMap(_entity as EntityMap, e);
+    else if (_entity is Entity) tag = _indexFromList(_entity as EntityList, e);
     if (oldC == null && newC != null) {
-      var animate = widget.animateAdded(newC);
+      var animate = widget.animateAdded(tag, newC);
 
       _playAnimation(animate);
     } else if (oldC != null && newC != null) {
-      var animate = widget.animateUpdated(oldC, newC);
+      var animate = widget.animateUpdated(tag, oldC, newC);
 
       _playAnimation(animate);
     } else {
-      var animate = widget.animateRemoved(oldC);
+      var animate = widget.animateRemoved(tag, oldC);
 
       _playAnimation(animate);
     }

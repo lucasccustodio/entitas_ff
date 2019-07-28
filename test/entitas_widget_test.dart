@@ -91,9 +91,9 @@ void main() async {
         entityManager: testEntityManager,
         child: MaterialApp(
           home: EntityObservingWidget<Entity>.extended(
-            rebuildAdded: (_) => false,
-            rebuildRemoved: (_) => false,
-            rebuildUpdated: (_, __) => true,
+            rebuildAdded: (_, __) => false,
+            rebuildRemoved: (_, __) => false,
+            rebuildUpdated: (_, __, ___) => true,
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
@@ -144,8 +144,8 @@ void main() async {
         entityManager: testEntityManager,
         child: MaterialApp(
           home: EntityObservingWidget<Entity>.extended(
-            rebuildAdded: (c) => c is IsSelected,
-            rebuildUpdated: (_, __) => false,
+            rebuildAdded: (_, c) => c is IsSelected,
+            rebuildUpdated: (_, __, ___) => false,
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
@@ -208,9 +208,9 @@ void main() async {
         entityManager: testEntityManager,
         child: MaterialApp(
           home: EntityObservingWidget<Entity>.extended(
-            rebuildRemoved: (c) => c is IsSelected,
-            rebuildAdded: (c) => false,
-            rebuildUpdated: (_, __) => false,
+            rebuildRemoved: (_, c) => c is IsSelected,
+            rebuildAdded: (_, c) => false,
+            rebuildUpdated: (_, __, ___) => false,
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
