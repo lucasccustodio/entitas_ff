@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.2.2+4
+- BREAKING CHANGE: Added a tag parameter to all *EntityObservingWidget callbacks to show which one of the observed entities is being modified, either the name on EntityMap or index on EntityList or null in case of single entity ie: EntityObservingWidget<Entity>.
+
 ## 0.2.2+3
 - Fixed another bug related to the new callbacks where returning `null` would still trigger a rebuild/animate
 
