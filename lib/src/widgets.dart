@@ -237,7 +237,7 @@ class EntityObservingWidgetState<E extends ObservableEntity>
     dynamic tag;
     if (super._entity is EntityMap)
       tag = _nameFromMap(super._entity as EntityMap, e);
-    else if (super._entity is Entity)
+    else if (super._entity is EntityList)
       tag = _indexFromList(super._entity as EntityList, e);
     if (oldC == null && newC != null) {
       var rebuildAdded = widget.rebuildAdded(tag, newC);
@@ -345,7 +345,8 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget<E>,
     dynamic tag;
     if (_entity is EntityMap)
       tag = _nameFromMap(_entity as EntityMap, e);
-    else if (_entity is Entity) tag = _indexFromList(_entity as EntityList, e);
+    else if (_entity is EntityList)
+      tag = _indexFromList(_entity as EntityList, e);
     if (oldC == null && newC != null) {
       var animate = widget.animateAdded(tag, newC);
 
