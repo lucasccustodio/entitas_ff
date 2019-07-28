@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.2.3
+- BREAKING CHANGE: Removed Entity variants in favor of composition since observing multiple entities via EntityMap or EntityList was counterintuitive and going against Flutter's philosophy, and is easily achievable by mix 'n matching *EntityObservingWidgets together. 
+
 ## 0.2.2+4
 - BREAKING CHANGE: Added a tag parameter to all *EntityObservingWidget callbacks to show which one of the observed entities is being modified, either the name on EntityMap or index on EntityList or null in case of single entity ie: EntityObservingWidget<Entity>.
 

@@ -48,45 +48,4 @@ main() {
 
     expect(entityManager.groupMatching(matcher).entities.length, 19);
   });
-
-  test('getUniques', () {
-    var entityManager = EntityManager();
-
-    entityManager.setUnique(CounterComponent(0));
-    entityManager.setUnique(Score(0));
-
-    var list = entityManager.getUniques([CounterComponent, Score]);
-
-    expect(list.entities.length, 2);
-
-    expect(list[0].get<CounterComponent>().counter, 0);
-    expect(list[1].get<Score>().value, 0);
-
-    entityManager.setUnique(CounterComponent(1));
-    entityManager.setUnique(Score(1));
-
-    expect(list[0].get<CounterComponent>().counter, 1);
-    expect(list[1].get<Score>().value, 1);
-  });
-
-  test('getUniquesNamed', () {
-    var entityManager = EntityManager();
-
-    entityManager.setUnique(CounterComponent(0));
-    entityManager.setUnique(Score(0));
-
-    var map = entityManager
-        .getUniquesNamed({'counter': CounterComponent, 'score': Score});
-
-    expect(map.entities.length, 2);
-
-    expect(map['counter'].get<CounterComponent>().counter, 0);
-    expect(map['score'].get<Score>().value, 0);
-
-    entityManager.setUnique(CounterComponent(1));
-    entityManager.setUnique(Score(1));
-
-    expect(map['counter'].get<CounterComponent>().counter, 1);
-    expect(map['score'].get<Score>().value, 1);
-  });
 }
