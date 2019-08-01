@@ -295,7 +295,6 @@ void main() async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
-    /// Instantiate TestComponent and set counter to 0
     testEntityManager.setUnique(TestComponent(0));
 
     /// Pump our Feature EntityManagerProvider
@@ -304,15 +303,16 @@ void main() async {
         entityManager: testEntityManager,
         system: RootSystem(
             entityManager: testEntityManager, systems: [TestSystem()]),
-        child: MaterialApp(
-            home: Builder(
-          builder: (context) => Scaffold(
-            body: EntityObservingWidget(
-              provider: (em) => em.getUniqueEntity<TestComponent>(),
-              builder: (entity, context) =>
-                  Text("Counter: ${entity.get<TestComponent>().counter}"),
-            ),
-          ),
+        child: MaterialApp(home: Builder(
+          builder: (context) {
+            return Scaffold(
+              body: EntityObservingWidget(
+                provider: (em) => em.getUniqueEntity<TestComponent>(),
+                builder: (entity, context) =>
+                    Text("Counter: ${entity.get<TestComponent>().counter}"),
+              ),
+            );
+          },
         )),
       ),
     );
@@ -320,7 +320,7 @@ void main() async {
     /// Root's counter should start at 0
     expect(find.text("Counter: 0"), findsOneWidget);
 
-    /// Advance 5 frames ie: make TestSystem tick 500 times
+    /// Advance 5 frames ie: make TestSystem tick 5 times
     for (var i = 0; i < 5; i++) await widgetTester.pump(Duration.zero);
 
     /// 500 frames passed but we need to account for the fact that ExecuteSystem starting ticking immediately and that pageBack() also takes a frame
@@ -382,8 +382,8 @@ void main() async {
             ),
             body: EntityObservingWidget(
               provider: (em) => em.getUniqueEntity<TestComponent>(),
-              builder: (entity, context) =>
-                  Text("Counter: ${entity.get<TestComponent>().counter}"),
+              builder: (e, context) =>
+                  Text("Counter: ${e.get<TestComponent>().counter}"),
             ),
           ),
         )),
@@ -396,15 +396,14 @@ void main() async {
     /// Push Feature atop of the stack
     await widgetTester.tap(find.text("Start feature"));
 
-    /// Advance 5 frames ie: make TestSystem tick 500 times
+    /// Advance 5 frames ie: make TestSystem tick 5 times
     for (var i = 0; i < 5; i++) await widgetTester.pump(Duration.zero);
 
     /// Pop the Feature to dispose of it
     await widgetTester.pageBack();
 
-    /// Should take two frames for the Root build and update counter's text
-    await widgetTester.pump(Duration.zero);
-    await widgetTester.pump(Duration.zero);
+    /// Should take a few frames for the Root get rebuilt and update counter's text
+    await widgetTester.pumpAndSettle();
 
     /// Counter should now be at 5
     expect(find.text("Counter: 5"), findsOneWidget);

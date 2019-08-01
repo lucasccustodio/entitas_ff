@@ -71,11 +71,11 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
 
   @override
   void initState() {
+    super.initState();
     widget.system.onCreate();
     widget.system.init();
     _ticker = createTicker(tick);
     _ticker.start();
-    super.initState();
   }
 
   @override
@@ -134,7 +134,8 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
     _ticker.stop();
     _ticker.dispose();
     widget.system.exit();
-    Future.delayed(Duration.zero, () => widget.system.onDestroy());
+    SchedulerBinding.instance
+        .addPostFrameCallback((_) => widget.system.onDestroy());
     super.dispose();
   }
 
@@ -170,12 +171,12 @@ mixin EntityWidget<T extends EntityObservableWidget> on State<T>
 
   @override
   void didChangeDependencies() {
+    super.didChangeDependencies();
     var entityManager = EntityManagerProvider.of(context).entityManager;
     assert(entityManager != null);
     _entity?.removeObserver(this);
     _entity = widget.provider(entityManager);
     if (_entity != null) _entity.addObserver(this);
-    super.didChangeDependencies();
   }
 
   @override
@@ -239,7 +240,7 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   }
 
   _update() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 }
 
@@ -283,8 +284,8 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
 
   @override
   void didUpdateWidget(AnimatableObservableWidget oldWidget) {
-    _updateAnimations();
     super.didUpdateWidget(oldWidget);
+    _updateAnimations();
   }
 
   void _updateAnimations() {
@@ -298,13 +299,13 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
 
   @override
   void initState() {
+    super.initState();
     _controller = widget.controller ??
         AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
         setState(() {});
       });
     _updateAnimations();
-    super.initState();
   }
 
   @override
@@ -312,7 +313,9 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     return widget.builder(_entity, _animations, context);
   }
 
-  void _updateButNotAnimate() => setState(() {});
+  void _updateButNotAnimate() {
+    if (mounted) setState(() {});
+  }
 
   void _playAnimation(EntityAnimation animation) {
     if (animation == EntityAnimation.none)
@@ -410,12 +413,12 @@ mixin GroupObservable<T extends GroupObservableWidget> on State<T>
 
   @override
   void didChangeDependencies() {
+    super.didChangeDependencies();
     var manager = EntityManagerProvider.of(context).entityManager;
     assert(manager != null, "$widget is not a child of GroupObservingWidget");
     _group?.removeObserver(this);
     _group = manager.groupMatching(widget.matcher);
     _group.addObserver(this);
-    super.didChangeDependencies();
   }
 
   @override
@@ -424,7 +427,7 @@ mixin GroupObservable<T extends GroupObservableWidget> on State<T>
   }
 
   _update() {
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   @override

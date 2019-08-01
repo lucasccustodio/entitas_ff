@@ -437,6 +437,8 @@ class EntityGroup implements EntityObserver {
   }
 }
 
+typedef void EntityManagerAction(EntityManager em);
+
 /// Interface which you need to implement, if you want to observe changes on [EntityManager] instance
 abstract class EntityManagerObserver {
   entityCreated(Entity e);
@@ -446,16 +448,37 @@ abstract class EntityManagerObserver {
 /// It manages the lifecycle of [Entity] instances and stores instances of [Group], which we use to access entities with certain qualities.
 /// EntityManager is observable, see `addObserver`, `removeObserver`.
 class EntityManager implements EntityObserver {
-  // sequential index of all created entities.
+  /// sequential index of all created entities.
   var _currentEntityIndex = 0;
-  // holds all entities mapped by creation id.
+
+  /// holds all entities mapped by creation id.
   final Map<int, Entity> _entities = Map();
-  // holds all groups mapped by entity matcher.
+
+  /// holds all groups mapped by entity matcher.
   final Map<EntityMatcher, EntityGroup> _groupsByMatcher = Map();
-  // holds all unique entities mapped to unique component type
+
+  /// holds all unique entities mapped to unique component type
   final Map<Type, Entity> _uniqueEntities = Map();
-  // holds observers
+
+  /// holds observers
   final Set<EntityManagerObserver> _observers = Set();
+
+  /// holds buffered actions
+  final List<EntityManagerAction> _bufferedActions = [];
+
+  /// Adds a new buffered action
+  void addBufferedAction(EntityManagerAction action) {
+    _bufferedActions.add(action);
+  }
+
+  /// Clears all current buffered actions
+  void clearBufferedActions() => _bufferedActions.clear();
+
+  /// Calls all buffered actions and clears the list
+  void flushActions() {
+    for (var action in _bufferedActions) action(this);
+    clearBufferedActions();
+  }
 
   /// The only way how users can create new entities.
   /// ### Example
@@ -661,7 +684,7 @@ class EntityIndex<C extends Component, T>
       }
       if (newC != null) {
         assert(_entities[_keyProducer(newC)] == null,
-            "Multiple values for same key are prohibited in EntityIndex, please use EntityMultiMap instead.");
+            "Multiple values for same key are prohibited in EntityIndex, please use EntityMultiIndex instead.");
         _entities[_keyProducer(newC)] = e;
       }
     }
@@ -680,7 +703,7 @@ class EntityIndex<C extends Component, T>
 
 /// A class which let users map entities against values of a component.
 /// ### Example
-///     var ageMap = EntityMultiMap<Age, int>(em, (name) => name.value);
+///     var ageMap = EntityMultiIndex<Age, int>(em, (name) => name.value);
 ///
 /// It is different from [EntityIndex] in a way that it lets multiple entities match agains the same key.
 class EntityMultiIndex<C extends Component, T>
@@ -699,21 +722,21 @@ class EntityMultiIndex<C extends Component, T>
     }
   }
 
-  /// EntityMultiMap is an [EntityManagerListener], this is an implementation of this protocol.
+  /// EntityMultiIndex is an [EntityManagerListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   entityCreated(Entity e) {
     e.addObserver(this);
   }
 
-  /// EntityMultiMap is an [EntityManagerListener], this is an implementation of this protocol.
+  /// EntityMultiIndex is an [EntityManagerListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   destroyed(Entity e) {
     e.removeObserver(this);
   }
 
-  /// EntityMultiMap is an [EntityManagerListener], this is an implementation of this protocol.
+  /// EntityMultiIndex is an [EntityManagerListener], this is an implementation of this protocol.
   /// Please don't use manually.
   @override
   exchanged(Entity e, Component oldC, Component newC) {

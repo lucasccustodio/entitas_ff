@@ -1,5 +1,11 @@
 # Changelog
 
+# 0.2.3+1
+- Code cleanup and optimization.
+- Introduced buffered actions to EntityManager, they work just like the name suggests letting you assign actions with addBufferedAction that can be later executed in batch using flushActions, or canceled with clearBufferedActions.
+- Bugfix: Fixed RootSystem constructor to use the provided lifecycle callbacks (OnCreate and OnDestroy).
+- Also fixed some tests.
+
 # 0.2.3
 - BREAKING CHANGE: Removed Entity variants in favor of composition since observing multiple entities via EntityMap or EntityList was counterintuitive and going against Flutter's philosophy, and is easily achievable by mix 'n matching *EntityObservingWidgets together. 
 

@@ -261,6 +261,8 @@ class RootSystem extends EntitySystem
       RootLifecycleCallback onCreate,
       RootLifecycleCallback onDestroy})
       : _entityManager = entityManager {
+    _onCreate = onCreate;
+    _onDestroy = onDestroy;
     for (var s in systems) {
       if (s is EntityManagerSystem) {
         s._manager = _entityManager;
@@ -411,7 +413,7 @@ class FeatureSystem extends EntitySystem
   final List<CleanupSystem> _cleanupSystems = [];
   final List<ExitSystem> _exitSystems = [];
   final EntityManager _rootEntityManager;
-  EntityManager entityManager = EntityManager();
+  final EntityManager entityManager = EntityManager();
 
   FeatureLifecycleCallback _onCreate;
   FeatureLifecycleCallback _onDestroy;
@@ -419,7 +421,7 @@ class FeatureSystem extends EntitySystem
   void onCreate() => _onCreate?.call(entityManager, _rootEntityManager);
   void onDestroy() {
     _onDestroy?.call(entityManager, _rootEntityManager);
-    entityManager = null;
+    entityManager.entities.forEach((e) => e.destroy());
   }
 
   FeatureSystem(

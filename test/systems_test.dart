@@ -245,9 +245,6 @@ void main() {
     /// Destroy Feature
     feature.onDestroy();
 
-    /// Feature's EntityManager disposed
-    expect(feature.entityManager, null);
-
     /// Root's counter equal to Feature's last counter
     expect(rootEM.getUnique<CounterComponent>().counter, 6);
   });
