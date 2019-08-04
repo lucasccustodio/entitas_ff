@@ -3,14 +3,14 @@ import 'package:test/test.dart';
 import 'components.dart';
 
 void main() {
-  test('Create entities', (){
-    EntityManager em = EntityManager();
-    var e1 = em.createEntity()
+  test('Create entities', () {
+    final em = EntityManager();
+    final e1 = em.createEntity()
       ..set(Name('Max'))
       ..set(Age(37))
       ..set(Position(1, 2));
     var e2 = em.createEntity();
-    e2 += Name("Alex");
+    e2 += Name('Alex');
     e2 += Age(45);
     e2 += Position(3, 3);
 
@@ -24,16 +24,16 @@ void main() {
     expect(em.entities.contains(e1), false);
     expect(em.entities.contains(e2), true);
 
-    expect(e2.get<Name>().value, "Alex");
+    expect(e2.get<Name>().value, 'Alex');
 
-    e2 += Name("Sasha");
-    expect(e2.get<Name>().value, "Sasha");
+    e2 += Name('Sasha');
+    expect(e2.get<Name>().value, 'Sasha');
 
     expect(e1.isAlive, false);
     expect(e2.isAlive, true);
   });
 
-  test('Get group', (){
+  test('Get group', () {
     EntityManager em = EntityManager();
     var e1 = em.createEntity()
       ..set(Name('Max'))
@@ -70,11 +70,11 @@ void main() {
     expect(people2.entities.contains(e2), true);
   });
 
-  test('Unique component', (){
-    EntityManager em = EntityManager();
+  test('Unique component', () {
+    final em = EntityManager();
     var e1 = em.setUnique(Selected());
     expect(e1.hasT<Selected>(), true);
-    
+
     var e2 = em.createEntity();
     expect(em.setUnique(Selected()), e1);
     em.setUniqueOnEntity(Selected(), e2);

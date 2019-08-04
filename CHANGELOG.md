@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.2.3+2
+- Code cleanup and optimization thanks to addition of analysis_options.yaml.
+
 # 0.2.3+1
 - Code cleanup and optimization.
 - Introduced buffered actions to EntityManager, they work just like the name suggests letting you assign actions with addBufferedAction that can be later executed in batch using flushActions, or canceled with clearBufferedActions.

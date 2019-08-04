@@ -15,35 +15,35 @@ class Name implements Component {
 }
 
 class Age implements Component {
-  final int value;
-
   Age(this.value);
+
+  final int value;
 }
 
 class IsSelected extends Component {
-  final bool value;
+  IsSelected({this.value = false});
 
-  IsSelected([this.value = false]);
+  final bool value;
 }
 
 class Selected implements UniqueComponent {}
 
 class Score implements UniqueComponent {
-  final int value;
-
   Score(this.value);
+
+  final int value;
 }
 
 class Position implements Component {
+  Position(this.x, this.y);
+
   final int x;
   final int y;
-
-  Position(this.x, this.y);
 }
 
 class Velocity implements Component {
+  Velocity(this.x, this.y);
+
   final int x;
   final int y;
-
-  Velocity(this.x, this.y);
 }
