@@ -320,7 +320,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
   }
 
   void _updateAnimations() {
-    print(widget.curve);
     _animations = widget.tweens.map((name, tween) =>
         MapEntry<String, Animation>(
             name,
