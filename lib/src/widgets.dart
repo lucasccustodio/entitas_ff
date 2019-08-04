@@ -291,7 +291,8 @@ abstract class AnimatableObservableWidget extends EntityObservableWidget {
       this.duration,
       this.animateAdded,
       this.animateRemoved,
-      this.animateUpdated})
+      this.animateUpdated,
+      this.onAnimationEnd})
       : super(key: key, provider: provider);
   final AnimatableEntityWidgetBuilder builder;
   final AnimationController controller;
@@ -302,6 +303,7 @@ abstract class AnimatableObservableWidget extends EntityObservableWidget {
   final AnimatableComponentAddedCallback animateAdded;
   final AnimatableComponentRemovedCallback animateRemoved;
   final AnimatableComponentUpdatedCallback animateUpdated;
+  final void Function(bool reversed) onAnimationEnd;
 }
 
 /// Mixin for [AnimatableEntityObservingWidget]
@@ -337,6 +339,13 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
         AnimationController(vsync: this, duration: widget.duration)
       ..addListener(() {
         setState(() {});
+      })
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          widget.onAnimationEnd?.call(false);
+        } else if (status == AnimationStatus.dismissed) {
+          widget.onAnimationEnd?.call(true);
+        }
       });
     _updateAnimations();
   }
@@ -406,6 +415,7 @@ class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
       AnimatableComponentAddedCallback animateAdded,
       AnimatableComponentRemovedCallback animateRemoved,
       AnimatableComponentUpdatedCallback animateUpdated,
+      void Function(bool) onAnimationEnd,
       AnimationController controller})
       : super(
             key: key,
@@ -418,6 +428,7 @@ class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
             animateAdded: animateAdded,
             animateRemoved: animateRemoved,
             animateUpdated: animateUpdated,
+            onAnimationEnd: onAnimationEnd,
             controller: controller);
 
   @override

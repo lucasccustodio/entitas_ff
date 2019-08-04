@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.2.3+3
+- Added a callback for when the animation is completed in both directions.
+
 # 0.2.3+2
 - Code cleanup and optimization thanks to addition of analysis_options.yaml.
 
