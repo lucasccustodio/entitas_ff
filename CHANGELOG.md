@@ -1,5 +1,9 @@
 # Changelog
 
+# 0.2.4
+- Added BlacklistEntity and BroadcastEntity.
+- Bugfixes and optimizations;
+
 # 0.2.3+3
 - Added a callback for when the animation is completed in both directions.
 

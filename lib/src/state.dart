@@ -24,40 +24,30 @@ abstract class UniqueComponent extends Component {}
 /// Interface which you need to implement if you want to observe changes on an [Entity] instance
 abstract class EntityObserver {
   /// Called after the destroy method is called on the entity and all components are removed.
-  void destroyed(Entity e);
+  void destroyed(ObservableEntity e);
 
   /// Called after a component was added exchanged or removed from an [Entity] instance.
   /// When a component was added, it is reflected in `newC` and `oldC` is `null`.
   /// When a component was removed, old component is reflected in `oldC` and `newC` is `null`.
   /// When a component was exchanged, old and new components are refelcted in `oldC` and `newC` respectively.
-  void exchanged(Entity e, Component oldC, Component newC);
+  void exchanged(ObservableEntity e, Component oldC, Component newC);
 }
 
 abstract class ObservableEntity {
-  void addObserver(EntityObserver o);
-  void removeObserver(EntityObserver o);
-}
+  ObservableEntity(this.creationIndex, EntityObserver mainObserver)
+      : _mainObserver = mainObserver;
 
-/// Class which represents an entity instance.
-/// An instance of an entity can be created only through an [EntityManger].
-/// ### Example
-///   EntityManager em = EntityManager();
-///   Entity e = em.createEntity();
-class Entity extends ObservableEntity {
-  Entity._(this.creationIndex, this._mainObserver);
-
-  /// Creation Index is assigned by the [EntityManager] on creation and can be seen as a sequential id of an entity.
   final int creationIndex;
-  // Main observer is a reference to the [EntityManager]
   final EntityObserver _mainObserver;
+  bool isAlive = true;
+  void checkIsAlive() {
+    assert(isAlive, 'Calling + Component on destroyed entity');
+  }
+
   // Holding all components map through their type.
   final Map<Type, Component> _components = {};
   // Holding all obeservers.
   final Set<EntityObserver> _observers = {};
-
-  /// Indicator if the entity was already destroyed.
-  /// Checked internally on netity mutating operations.
-  bool isAlive = true;
 
   /// Returns component instance by type or `null` if not present.
   T get<T extends Component>() {
@@ -72,8 +62,8 @@ class Entity extends ObservableEntity {
   /// If the entity already has a component of the same instance, the component will be replaced with provided one.
   /// After the component is set, all observers are notified.
   /// Calling this operator on a destroyed entity is considerered an error.
-  Entity operator +(Component c) {
-    assert(isAlive, 'Calling + Component on destroyed entity');
+  ObservableEntity operator +(Component c) {
+    checkIsAlive();
     final oldC = _components[c.runtimeType];
     _components[c.runtimeType] = c;
     _mainObserver.exchanged(this, oldC, c);
@@ -93,8 +83,8 @@ class Entity extends ObservableEntity {
   /// If component of the given type was not present on the entity, nothing happens.
   /// The observers are notified only if there was a component removed.
   /// Calling this operator on a destroyed entity is considerered an error.
-  Entity operator -(Type t) {
-    assert(isAlive, 'Calling - Component on destroyed entity');
+  ObservableEntity operator -(Type t) {
+    checkIsAlive();
     final c = _components[t];
     if (c != null) {
       _components.remove(t);
@@ -137,14 +127,12 @@ class Entity extends ObservableEntity {
 
   /// Adds observer to the entity which will be notified on every mutating action.
   /// Observers are stored in a [Set].
-  @override
   void addObserver(EntityObserver o) {
     _observers.add(o);
     __observerList = null;
   }
 
   /// Remove an observer form the [Set] of observers.
-  @override
   void removeObserver(EntityObserver o) {
     _observers.remove(o);
     __observerList = null;
@@ -163,6 +151,7 @@ class Entity extends ObservableEntity {
     for (var o in _observerList) {
       o.destroyed(this);
     }
+    _components.clear();
     _observers.clear();
     __observerList = null;
     isAlive = false;
@@ -185,6 +174,135 @@ class Entity extends ObservableEntity {
   List<EntityObserver> __observerList;
   List<EntityObserver> get _observerList {
     return __observerList ??= List.unmodifiable(_observers);
+  }
+}
+
+/// Class which represents an entity instance.
+/// An instance of an entity can be created only through an `EntityManger`.
+/// ### Example
+///   EntityManager em = EntityManager();
+///   Entity e = em.createEntity();
+class Entity extends ObservableEntity {
+  Entity._(int creationIndex, EntityObserver mainObserver)
+      : super(creationIndex, mainObserver);
+}
+
+/// Class which represents an entity instance that avoids calling it's observers needlessly by checking against a blacklist of components.
+/// An instance of an entity can be created only through an `EntityManger`.
+/// ### Example
+///   EntityManager em = EntityManager();
+///   Entity e = em.createEntity();
+class BlacklistEntity extends ObservableEntity {
+  BlacklistEntity._(
+      int creationIndex, EntityObserver mainObserver, this._blacklist)
+      : super(creationIndex, mainObserver);
+
+  /// Components that should be ignored by observers
+  final Set<Type> _blacklist;
+
+  void addToBlacklist<T extends Component>() => _blacklist.add(T);
+
+  void removedFromBlacklist<T extends Component>() => _blacklist.remove(T);
+
+  void clearBlacklist() => _blacklist.clear();
+
+  List<Type> get blacklist =>
+      List.unmodifiable(_blacklist.toList(growable: false));
+
+  @override
+  BlacklistEntity operator +(Component c) {
+    checkIsAlive();
+    final oldC = _components[c.runtimeType];
+    _components[c.runtimeType] = c;
+    _mainObserver.exchanged(this, oldC, c);
+    if (!_blacklist.contains(c.runtimeType))
+      for (var o in _observerList) {
+        o.exchanged(this, oldC, c);
+      }
+    return this;
+  }
+
+  @override
+  BlacklistEntity operator -(Type t) {
+    checkIsAlive();
+    final c = _components[t];
+    if (c != null) {
+      _components.remove(t);
+      _mainObserver.exchanged(this, c, null);
+      if (!_blacklist.contains(c.runtimeType))
+        for (var o in _observerList) {
+          o.exchanged(this, c, null);
+        }
+    }
+
+    return this;
+  }
+}
+
+/// Class which represents an entity instance that can broadcast it's value to other entities.
+/// An instance of an entity can be created only through an `EntityManger`.
+/// ### Example
+///   EntityManager em = EntityManager();
+///   Entity e = em.createEntity();
+class BroadcastEntity extends ObservableEntity {
+  BroadcastEntity._(int creationIndex, EntityObserver mainObserver)
+      : super(creationIndex, mainObserver);
+
+  final Set<ObservableEntity> _broadcastTo = {};
+  List<ObservableEntity> _entities;
+
+  void addEntity(ObservableEntity entity) {
+    _broadcastTo.add(entity);
+    _entities = null;
+  }
+
+  void addAll(List<ObservableEntity> entities) {
+    _broadcastTo.addAll(entities);
+    _entities = null;
+  }
+
+  void removeEntity(ObservableEntity entity) {
+    _broadcastTo.remove(entity);
+    _entities = null;
+  }
+
+  void removelAll() => _broadcastTo.clear();
+
+  List<ObservableEntity> get entities =>
+      _entities ??= List.unmodifiable(_broadcastTo.toList());
+
+  @override
+  BroadcastEntity operator +(Component c) {
+    checkIsAlive();
+    final oldC = _components[c.runtimeType];
+    _components[c.runtimeType] = c;
+    _mainObserver.exchanged(this, oldC, c);
+    for (var o in _observerList) {
+      o.exchanged(this, oldC, c);
+    }
+
+    for (var e in entities) {
+      final _ = e + c;
+    }
+    return this;
+  }
+
+  @override
+  BroadcastEntity operator -(Type t) {
+    checkIsAlive();
+    final c = _components[t];
+    if (c != null) {
+      _components.remove(t);
+      _mainObserver.exchanged(this, c, null);
+      for (var o in _observerList) {
+        o.exchanged(this, c, null);
+      }
+
+      for (var e in entities) {
+        final _ = e - t;
+      }
+    }
+    return this;
   }
 }
 
@@ -355,14 +473,14 @@ class EntityGroup implements EntityObserver {
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void destroyed(Entity e) {
+  void destroyed(ObservableEntity e) {
     e.removeObserver(this);
   }
 
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     final isRelevantAdd =
         newC != null && matcher.containsType(newC.runtimeType);
     final isRelevantRemove =
@@ -435,7 +553,7 @@ typedef EntityManagerAction = void Function(EntityManager em);
 
 /// Interface which you need to implement, if you want to observe changes on [EntityManager] instance
 mixin EntityManagerObserver {
-  void entityCreated(Entity e);
+  void entityCreated(ObservableEntity e);
 }
 
 /// EntityManager is the central peace of entitas_ff. It can b eunderstood as a central managing data structure.
@@ -446,13 +564,13 @@ class EntityManager implements EntityObserver {
   var _currentEntityIndex = 0;
 
   /// holds all entities mapped by creation id.
-  final Map<int, Entity> _entities = {};
+  final Map<int, ObservableEntity> _entities = {};
 
   /// holds all groups mapped by entity matcher.
   final Map<EntityMatcher, EntityGroup> _groupsByMatcher = {};
 
   /// holds all unique entities mapped to unique component type
-  final Map<Type, Entity> _uniqueEntities = {};
+  final Map<Type, ObservableEntity> _uniqueEntities = {};
 
   /// holds observers
   final Set<EntityManagerObserver> _observers = {};
@@ -484,13 +602,53 @@ class EntityManager implements EntityObserver {
   /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
   /// At the end it will notify own observers that an eneitty was created.
   Entity createEntity() {
-    var e = Entity._(_currentEntityIndex, this);
+    final e = Entity._(_currentEntityIndex, this);
     _entities[_currentEntityIndex] = e;
     _currentEntityIndex++;
-    for (var g in _groupsByMatcher.values) {
+    for (final g in _groupsByMatcher.values) {
       e.addObserver(g);
     }
-    for (var o in _observerList) {
+    for (final o in _observerList) {
+      o.entityCreated(e);
+    }
+    return e;
+  }
+
+  /// The only way how users can create new entities.
+  /// ### Example
+  ///   EntityManager em = EntityManager();
+  ///   Entity e = em.createEntity();
+  ///
+  /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
+  /// At the end it will notify own observers that an eneitty was created.
+  BlacklistEntity createBlacklistEntity([List<Type> blacklist = const []]) {
+    final e = BlacklistEntity._(_currentEntityIndex, this, Set.from(blacklist));
+    _entities[_currentEntityIndex] = e;
+    _currentEntityIndex++;
+    for (final g in _groupsByMatcher.values) {
+      e.addObserver(g);
+    }
+    for (final o in _observerList) {
+      o.entityCreated(e);
+    }
+    return e;
+  }
+
+  /// The only way how users can create new entities.
+  /// ### Example
+  ///   EntityManager em = EntityManager();
+  ///   Entity e = em.createEntity();
+  ///
+  /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
+  /// At the end it will notify own observers that an eneitty was created.
+  BroadcastEntity createBroadcastEntity([List<Entity> entities = const []]) {
+    final e = BroadcastEntity._(_currentEntityIndex, this);
+    _entities[_currentEntityIndex] = e;
+    _currentEntityIndex++;
+    for (final g in _groupsByMatcher.values) {
+      e.addObserver(g);
+    }
+    for (final o in _observerList) {
       o.entityCreated(e);
     }
     return e;
@@ -499,14 +657,14 @@ class EntityManager implements EntityObserver {
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void destroyed(Entity e) {
+  void destroyed(ObservableEntity e) {
     _entities.remove(e.creationIndex);
   }
 
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (newC is UniqueComponent || oldC is UniqueComponent) {
       if (oldC != null && newC == null) {
         _uniqueEntities.remove(oldC.runtimeType);
@@ -637,7 +795,7 @@ class EntityIndex<C extends Component, T>
     implements EntityObserver, EntityManagerObserver {
   EntityIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
-    for (var e in entityManager.entities) {
+    for (final e in entityManager.entities) {
       e.addObserver(this);
       if (e.has(C)) {
         exchanged(e, null, e.get<C>());
@@ -652,21 +810,21 @@ class EntityIndex<C extends Component, T>
   /// EntityIndex is an `EntityManagerListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void entityCreated(Entity e) {
+  void entityCreated(ObservableEntity e) {
     e.addObserver(this);
   }
 
   /// EntityIndex is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void destroyed(Entity e) {
+  void destroyed(ObservableEntity e) {
     e.removeObserver(this);
   }
 
   /// EntityIndex is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC is C || newC is C) {
       if (oldC != null) {
         _entities.remove(_keyProducer(oldC));
@@ -699,7 +857,7 @@ class EntityMultiIndex<C extends Component, T>
     implements EntityObserver, EntityManagerObserver {
   EntityMultiIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
-    for (var e in entityManager.entities) {
+    for (final e in entityManager.entities) {
       e.addObserver(this);
       if (e.has(C)) {
         exchanged(e, null, e.get<C>());
@@ -714,21 +872,21 @@ class EntityMultiIndex<C extends Component, T>
   /// EntityMultiIndex is an `EntityManagerListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void entityCreated(Entity e) {
+  void entityCreated(ObservableEntity e) {
     e.addObserver(this);
   }
 
   /// EntityMultiIndex is an `EntityManagerListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void destroyed(Entity e) {
+  void destroyed(ObservableEntity e) {
     e.removeObserver(this);
   }
 
   /// EntityMultiIndex is an `EntityManagerListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC is C || newC is C) {
       if (oldC != null) {
         _entities[_keyProducer(oldC)]?.remove(e);

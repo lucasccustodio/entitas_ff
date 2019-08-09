@@ -25,13 +25,9 @@ abstract class ExitSystem extends System {
 
 /// An abstract class which user should implement if they want their systems to hold a reference to [EntityManager]
 abstract class EntityManagerSystem extends System {
-  EntityManager __manager;
-  @mustCallSuper
-  set _manager(EntityManager m) {
-    __manager = m;
-  }
+  EntityManager _manager;
 
-  EntityManager get entityManager => __manager;
+  EntityManager get entityManager => _manager;
 }
 
 /// Enum characterising the group change events.
@@ -83,7 +79,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   set _manager(EntityManager m) {
     super._manager = m;
     assert(matcher != null, 'Matcher was not specified in system $runtimeType');
-    _group = __manager.groupMatching(matcher)..addObserver(this);
+    _group = _manager.groupMatching(matcher)..addObserver(this);
   }
 
   /// Implementation of [GroupObserver].
@@ -181,7 +177,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   set _manager(EntityManager m) {
     super._manager = m;
     assert(matcher != null, 'Matcher was not specified in system $runtimeType');
-    _group = __manager.groupMatching(matcher)..addObserver(this);
+    _group = _manager.groupMatching(matcher)..addObserver(this);
   }
 
   /// Implementation of [GroupObserver].
@@ -250,7 +246,7 @@ class RootSystem extends EntitySystem
       : _entityManager = entityManager {
     _onCreate = onCreate;
     _onDestroy = onDestroy;
-    for (var s in systems) {
+    for (final s in systems) {
       if (s is EntityManagerSystem) {
         s._manager = _entityManager;
       }
@@ -290,7 +286,7 @@ class RootSystem extends EntitySystem
   /// Delegates the call to its children.
   @override
   void init() {
-    for (var s in _initSystems) {
+    for (final s in _initSystems) {
       s.init();
     }
   }
@@ -299,7 +295,7 @@ class RootSystem extends EntitySystem
   /// Delegates the call to its children.
   @override
   void execute() {
-    for (var s in _executeSystems) {
+    for (final s in _executeSystems) {
       s.execute();
     }
   }
@@ -308,7 +304,7 @@ class RootSystem extends EntitySystem
   /// Delegates the call to its children.
   @override
   void cleanup() {
-    for (var s in _cleanupSystems) {
+    for (final s in _cleanupSystems) {
       s.cleanup();
     }
   }
@@ -317,7 +313,7 @@ class RootSystem extends EntitySystem
   /// Delegates the call to its children.
   @override
   void exit() {
-    for (var s in _exitSystems) {
+    for (final s in _exitSystems) {
       s.exit();
     }
   }
@@ -353,7 +349,7 @@ class ReactiveRootSystem extends RootSystem
   /// Implementation of [EntityManagerObserver].
   /// Please don't call directly.
   @override
-  void entityCreated(Entity e) {
+  void entityCreated(ObservableEntity e) {
     e.addObserver(this);
   }
 
@@ -420,7 +416,7 @@ class FeatureSystem extends EntitySystem
       : _rootEntityManager = rootEntityManager,
         _onCreate = onCreate,
         _onDestroy = onDestroy {
-    for (var s in systems) {
+    for (final s in systems) {
       if (s is EntityManagerSystem) {
         s._manager = entityManager;
       }

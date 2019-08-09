@@ -12,6 +12,9 @@ class Name implements Component {
   final String value;
 
   Name(this.value);
+
+  @override
+  String toString() => value;
 }
 
 class Age implements Component {

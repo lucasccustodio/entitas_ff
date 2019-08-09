@@ -287,8 +287,7 @@ void main() async {
 
   testWidgets('Root system', (widgetTester) async {
     /// Instantiate our EntityManager
-    final testEntityManager = EntityManager()
-    ..setUnique(TestComponent(0));
+    final testEntityManager = EntityManager()..setUnique(TestComponent(0));
 
     /// Pump our Feature EntityManagerProvider
     await widgetTester.pumpWidget(
@@ -324,8 +323,7 @@ void main() async {
 
   testWidgets('Feature system', (widgetTester) async {
     /// Instantiate our EntityManager
-    final testEntityManager = EntityManager()
-    ..setUnique(TestComponent(0));
+    final testEntityManager = EntityManager()..setUnique(TestComponent(0));
 
     /// Pump our Feature EntityManagerProvider
     await widgetTester.pumpWidget(

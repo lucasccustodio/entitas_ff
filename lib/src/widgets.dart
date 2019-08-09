@@ -229,12 +229,10 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   }
 
   @override
-  void destroyed(Entity e) {
-    _update();
-  }
+  void destroyed(ObservableEntity e) {}
 
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
       final rebuildAdded = widget.rebuildAdded?.call(newC) ?? true;
       if (rebuildAdded) {
@@ -264,7 +262,7 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
 typedef AnimatableEntityWidgetBuilder = Widget Function(
     Entity entity, Map<String, Animation> animations, BuildContext context);
 
-enum EntityAnimation { none, forward, reverse }
+enum EntityAnimation { none, forward, reverse, ignore }
 
 /// Callback for when a [Component] is added.
 typedef AnimatableComponentAddedCallback = EntityAnimation Function(
@@ -337,33 +335,34 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     super.initState();
     _controller = widget.controller ??
         AnimationController(vsync: this, duration: widget.duration)
-      ..addListener(() {
-        setState(() {});
-      })
-      ..addStatusListener((status) {
-        if (status == AnimationStatus.completed) {
-          widget.onAnimationEnd?.call(false);
-        } else if (status == AnimationStatus.dismissed) {
-          widget.onAnimationEnd?.call(true);
-        }
-      });
+      ..addListener(_update)
+      ..addStatusListener(_updateStatus);
     _updateAnimations();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return widget.builder(_entity, _animations, context);
-  }
-
-  void _updateButNotAnimate() {
+  void _update() {
     if (mounted) {
       setState(() {});
     }
   }
 
+  void _updateStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed) {
+      widget.onAnimationEnd?.call(false);
+    } else if (status == AnimationStatus.dismissed) {
+      widget.onAnimationEnd?.call(true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(_entity, _animations, context);
+
   void _playAnimation(EntityAnimation animation) {
-    if (animation == EntityAnimation.none)
-      return _updateButNotAnimate();
+    if (animation == EntityAnimation.ignore) {
+      return;
+    } else if (animation == EntityAnimation.none)
+      return _update();
     else if (animation == EntityAnimation.forward)
       _controller.forward(from: 0);
     else
@@ -371,7 +370,7 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
   }
 
   @override
-  void exchanged(Entity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
       final animate =
           widget.animateAdded?.call(newC) ?? EntityAnimation.forward;
@@ -391,8 +390,11 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
   }
 
   @override
-  void destroyed(Entity e) {
-    _controller.reset();
+  void destroyed(ObservableEntity e) {
+    _controller
+      ..stop()
+      ..removeListener(_update)
+      ..removeStatusListener(_updateStatus);
   }
 
   @override
