@@ -146,7 +146,7 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
 }
 
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
-typedef EntityProvider = Entity Function(EntityManager entityManager);
+typedef EntityProvider = ObservableEntity Function(EntityManager entityManager);
 
 /// Callback for when a [Component] is added.
 typedef ComponentAddedCallback = bool Function(Component c);
@@ -159,7 +159,8 @@ typedef ComponentUpdatedCallback = bool Function(
 typedef ComponentRemovedCallback = bool Function(Component c);
 
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
-typedef EntityWidgetBuilder = Widget Function(Entity e, BuildContext context);
+typedef EntityWidgetBuilder<E extends ObservableEntity> = Widget Function(
+    E e, BuildContext context);
 
 /// Base class for [EntityObservingWidget]
 abstract class EntityObservableWidget extends StatefulWidget {
@@ -170,7 +171,7 @@ abstract class EntityObservableWidget extends StatefulWidget {
 
 mixin EntityWidget<T extends EntityObservableWidget> on State<T>
     implements EntityObserver {
-  Entity _entity;
+  ObservableEntity _entity;
 
   @override
   void didChangeDependencies() {
@@ -192,7 +193,8 @@ mixin EntityWidget<T extends EntityObservableWidget> on State<T>
 }
 
 /// Widget that rebuilds when its observing [Entity] add, update or remove a [Component].
-class EntityObservingWidget extends EntityObservableWidget {
+class EntityObservingWidget<E extends ObservableEntity>
+    extends EntityObservableWidget {
   /// Default constructor for EntityObservingWidget
   const EntityObservingWidget(
       {@required this.builder, EntityProvider provider, Key key})
@@ -211,7 +213,7 @@ class EntityObservingWidget extends EntityObservableWidget {
       this.rebuildRemoved})
       : super(key: key, provider: provider);
 
-  final EntityWidgetBuilder builder;
+  final EntityWidgetBuilder<E> builder;
   final ComponentAddedCallback rebuildAdded;
   final ComponentRemovedCallback rebuildRemoved;
   final ComponentUpdatedCallback rebuildUpdated;
@@ -259,8 +261,8 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
 }
 
 /// Given an [Entity] reference, a [Map] of [Animation]s and a [BuildContext], produces a animated [Widget];
-typedef AnimatableEntityWidgetBuilder = Widget Function(
-    Entity entity, Map<String, Animation> animations, BuildContext context);
+typedef AnimatableEntityWidgetBuilder<E extends ObservableEntity> = Widget
+    Function(E entity, Map<String, Animation> animations, BuildContext context);
 
 enum EntityAnimation { none, forward, reverse, ignore }
 
@@ -281,7 +283,6 @@ abstract class AnimatableObservableWidget extends EntityObservableWidget {
   const AnimatableObservableWidget(
       {Key key,
       EntityProvider provider,
-      this.builder,
       this.controller,
       this.tweens,
       this.startAnimating,
@@ -292,7 +293,6 @@ abstract class AnimatableObservableWidget extends EntityObservableWidget {
       this.animateUpdated,
       this.onAnimationEnd})
       : super(key: key, provider: provider);
-  final AnimatableEntityWidgetBuilder builder;
   final AnimationController controller;
   final Map<String, Tween> tweens;
   final bool startAnimating;
@@ -354,10 +354,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     }
   }
 
-  @override
-  Widget build(BuildContext context) =>
-      widget.builder(_entity, _animations, context);
-
   void _playAnimation(EntityAnimation animation) {
     if (animation == EntityAnimation.ignore) {
       return;
@@ -405,10 +401,11 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
 }
 
 /// Widget that rebuilds when its [Entity] reference add, update or remove a [Component], that also can play one or more [Animation]s according to the result of animateAdded, animateUpdated and animateRemoved respectively.
-class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
+class AnimatableEntityObservingWidget<E extends ObservableEntity>
+    extends AnimatableObservableWidget {
   const AnimatableEntityObservingWidget(
       {@required EntityProvider provider,
-      @required AnimatableEntityWidgetBuilder builder,
+      @required this.builder,
       @required Map<String, Tween> tweens,
       Key key,
       Curve curve = Curves.linear,
@@ -422,7 +419,6 @@ class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
       : super(
             key: key,
             provider: provider,
-            builder: builder,
             curve: curve,
             duration: duration,
             tweens: tweens,
@@ -433,6 +429,8 @@ class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
             onAnimationEnd: onAnimationEnd,
             controller: controller);
 
+  final AnimatableEntityWidgetBuilder<E> builder;
+
   @override
   AnimatableEntityObservingWidgetState<AnimatableEntityObservingWidget>
       createState() => AnimatableEntityObservingWidgetState();
@@ -441,7 +439,11 @@ class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
 /// State class for [AnimatableEntityObservingWidget]
 class AnimatableEntityObservingWidgetState<
         T extends AnimatableEntityObservingWidget> extends State<T>
-    with EntityWidget, AnimatableEntityWidget, SingleTickerProviderStateMixin {}
+    with EntityWidget, AnimatableEntityWidget, SingleTickerProviderStateMixin {
+  @override
+  Widget build(BuildContext context) =>
+      widget.builder(_entity, _animations, context);
+}
 
 /// Defines a function which given a [EntityGroup] instance and [BuildContext] returns an instance of a [Widget].
 typedef GroupWidgetBuilder = Widget Function(
@@ -481,17 +483,17 @@ mixin GroupObservable<T extends GroupObservableWidget> on State<T>
   }
 
   @override
-  void added(EntityGroup group, Entity entity) {
+  void added(EntityGroup group, ObservableEntity entity) {
     _update();
   }
 
   @override
-  void removed(EntityGroup group, Entity entity) {
+  void removed(EntityGroup group, ObservableEntity entity) {
     _update();
   }
 
   @override
-  void updated(EntityGroup group, Entity entity) {
+  void updated(EntityGroup group, ObservableEntity entity) {
     _update();
   }
 

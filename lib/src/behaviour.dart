@@ -86,7 +86,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
   @override
-  void added(EntityGroup group, Entity entity) {
+  void added(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.added ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -98,7 +98,7 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
   @override
-  void updated(EntityGroup group, Entity entity) {
+  void updated(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.updated ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -110,14 +110,14 @@ abstract class ReactiveSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent].
   /// Please don't call directly.
   @override
-  void removed(EntityGroup group, Entity entity) {
+  void removed(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.removed || event == GroupChangeEvent.any) {
       _collectedEntities.add(entity);
     }
   }
 
   /// Abstract methods user needs to implement. See example on the class definition.
-  void executeWith(List<Entity> entities);
+  void executeWith(List<ObservableEntity> entities);
 
   /// Abstract getter user needs to implement. See example on the class definition.
   EntityMatcher get matcher;
@@ -184,7 +184,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
   @override
-  void added(EntityGroup group, Entity entity) {
+  void added(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.added ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -196,7 +196,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
   @override
-  void updated(EntityGroup group, Entity entity) {
+  void updated(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.updated ||
         event == GroupChangeEvent.addedOrUpdated ||
         event == GroupChangeEvent.any) {
@@ -208,7 +208,7 @@ abstract class TriggeredSystem extends EntityManagerSystem
   /// Processes changes in respect to provided [GroupChangeEvent] and sets `_triggered` value accordingly.
   /// Please don't call directly.
   @override
-  void removed(EntityGroup group, Entity entity) {
+  void removed(EntityGroup group, ObservableEntity entity) {
     if (event == GroupChangeEvent.removed || event == GroupChangeEvent.any) {
       _triggered = true;
     }

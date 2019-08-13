@@ -239,7 +239,7 @@ class BlacklistEntity extends ObservableEntity {
   }
 }
 
-/// Class which represents an entity instance that can broadcast it's value to other entities.
+/// Class which represents an entity instance that can broadcast its value to other entities.
 /// An instance of an entity can be created only through an `EntityManger`.
 /// ### Example
 ///   EntityManager em = EntityManager();
@@ -352,7 +352,7 @@ class EntityMatcher {
           maybe: [..._maybe.toList(), if (maybe != null) ...maybe]);
 
   /// Checks if the [Entity] contains necessary components.
-  bool matches(Entity e) {
+  bool matches(ObservableEntity e) {
     for (var t in _all) {
       if (e.has(t) == false) {
         return false;
@@ -410,9 +410,9 @@ class EntityMatcher {
 
 /// Interface which you need to implement, if you want to observe changes on [EntityGroup] instance
 abstract class GroupObserver {
-  void added(EntityGroup group, Entity entity);
-  void updated(EntityGroup group, Entity entity);
-  void removed(EntityGroup group, Entity entity);
+  void added(EntityGroup group, ObservableEntity entity);
+  void updated(EntityGroup group, ObservableEntity entity);
+  void removed(EntityGroup group, ObservableEntity entity);
 }
 
 /// Group represent a collection of entities, which match a given [EntityMatcher] and is always up to date.
@@ -438,7 +438,7 @@ class EntityGroup implements EntityObserver {
   EntityGroup._(this.matcher) : assert(matcher != null);
 
   // References to entities matching the `matcher` are stored as a [Set]
-  final Set<Entity> _entities = {};
+  final Set<ObservableEntity> _entities = {};
   // References to group observers.
   final Set<GroupObserver> _observers = {};
 
@@ -463,7 +463,7 @@ class EntityGroup implements EntityObserver {
   bool get isEmpty => _entities.isEmpty;
 
   // Internal method called only by [EntityManager], to fill up a newly instantited group with exisitng matching entities.
-  void _addEntity(Entity e) {
+  void _addEntity(ObservableEntity e) {
     _entities.add(e);
     for (var o in _observerList) {
       o.added(this, e);
@@ -517,11 +517,11 @@ class EntityGroup implements EntityObserver {
   ///     e.destroy();
   ///   }
   /// As we call `destroy` on the entity `e` it will imideatly exit the group, but it is ok as we are iterating on list of entities and not on the group directly.
-  List<Entity> get entities {
+  List<ObservableEntity> get entities {
     return __entities ??= List.unmodifiable(_entities);
   }
 
-  List<Entity> __entities;
+  List<ObservableEntity> __entities;
 
   /// Helper method to perform destruction of all entities in the group.
   void destroyAllEntities() {
@@ -543,7 +543,7 @@ class EntityGroup implements EntityObserver {
   int get hashCode => matcher.hashCode;
 
   // Caching the observer list, so that when observers are called they can safely remove themselves as observers
-  List<GroupObserver> __observerList = List(0);
+  List<GroupObserver> __observerList;
   List<GroupObserver> get _observerList {
     return __observerList ??= List.unmodifiable(_observers);
   }
@@ -641,7 +641,7 @@ class EntityManager implements EntityObserver {
   ///
   /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
   /// At the end it will notify own observers that an eneitty was created.
-  BroadcastEntity createBroadcastEntity([List<Entity> entities = const []]) {
+  BroadcastEntity createBroadcastEntity() {
     final e = BroadcastEntity._(_currentEntityIndex, this);
     _entities[_currentEntityIndex] = e;
     _currentEntityIndex++;
@@ -726,6 +726,14 @@ class EntityManager implements EntityObserver {
 
   /// Returns [Entity] instance which hold the unique component, or `null`.
   Entity getUniqueEntity<T extends UniqueComponent>() {
+    return _uniqueEntities[T];
+  }
+
+  BlacklistEntity getUniqueBlacklistEntity<T extends UniqueComponent>() {
+    return _uniqueEntities[T];
+  }
+
+  BroadcastEntity getUniqueBroadcastEntity<T extends UniqueComponent>() {
     return _uniqueEntities[T];
   }
 
