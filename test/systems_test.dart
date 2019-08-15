@@ -37,7 +37,7 @@ class _InteractiveMoveSystem extends ReactiveSystem implements CleanupSystem {
   EntityMatcher get matcher => EntityMatcher(all: [Selected, Position]);
 
   @override
-  executeWith(List<Entity> entities) {
+  void executeWith(List<ObservableEntity> entities) {
     for (var e in entities) {
       var posX = e.get<Position>().x + 1;
       var posY = e.get<Position>().y + 1;

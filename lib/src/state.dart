@@ -144,8 +144,8 @@ abstract class ObservableEntity {
   /// 3. Remove all observers
   /// 4. Set `isAlive` to `false`.
   void destroy() {
-    for (var comp in _components.values.toList()) {
-      final _ = this - comp.runtimeType;
+    for (var comp in _components.keys.toList()) {
+      final _ = this - comp;
     }
     _mainObserver.destroyed(this);
     for (var o in _observerList) {
@@ -185,125 +185,6 @@ abstract class ObservableEntity {
 class Entity extends ObservableEntity {
   Entity._(int creationIndex, EntityObserver mainObserver)
       : super(creationIndex, mainObserver);
-}
-
-/// Class which represents an entity instance that avoids calling it's observers needlessly by checking against a blacklist of components.
-/// An instance of an entity can be created only through an `EntityManger`.
-/// ### Example
-///   EntityManager em = EntityManager();
-///   Entity e = em.createEntity();
-class BlacklistEntity extends ObservableEntity {
-  BlacklistEntity._(
-      int creationIndex, EntityObserver mainObserver, this._blacklist)
-      : super(creationIndex, mainObserver);
-
-  /// Components that should be ignored by observers
-  final Set<Type> _blacklist;
-
-  void addToBlacklist<T extends Component>() => _blacklist.add(T);
-
-  void removedFromBlacklist<T extends Component>() => _blacklist.remove(T);
-
-  void clearBlacklist() => _blacklist.clear();
-
-  List<Type> get blacklist =>
-      List.unmodifiable(_blacklist.toList(growable: false));
-
-  @override
-  BlacklistEntity operator +(Component c) {
-    checkIsAlive();
-    final oldC = _components[c.runtimeType];
-    _components[c.runtimeType] = c;
-    _mainObserver.exchanged(this, oldC, c);
-    if (!_blacklist.contains(c.runtimeType))
-      for (var o in _observerList) {
-        o.exchanged(this, oldC, c);
-      }
-    return this;
-  }
-
-  @override
-  BlacklistEntity operator -(Type t) {
-    checkIsAlive();
-    final c = _components[t];
-    if (c != null) {
-      _components.remove(t);
-      _mainObserver.exchanged(this, c, null);
-      if (!_blacklist.contains(c.runtimeType))
-        for (var o in _observerList) {
-          o.exchanged(this, c, null);
-        }
-    }
-
-    return this;
-  }
-}
-
-/// Class which represents an entity instance that can broadcast its value to other entities.
-/// An instance of an entity can be created only through an `EntityManger`.
-/// ### Example
-///   EntityManager em = EntityManager();
-///   Entity e = em.createEntity();
-class BroadcastEntity extends ObservableEntity {
-  BroadcastEntity._(int creationIndex, EntityObserver mainObserver)
-      : super(creationIndex, mainObserver);
-
-  final Set<ObservableEntity> _broadcastTo = {};
-  List<ObservableEntity> _entities;
-
-  void addEntity(ObservableEntity entity) {
-    _broadcastTo.add(entity);
-    _entities = null;
-  }
-
-  void addAll(List<ObservableEntity> entities) {
-    _broadcastTo.addAll(entities);
-    _entities = null;
-  }
-
-  void removeEntity(ObservableEntity entity) {
-    _broadcastTo.remove(entity);
-    _entities = null;
-  }
-
-  void removelAll() => _broadcastTo.clear();
-
-  List<ObservableEntity> get entities =>
-      _entities ??= List.unmodifiable(_broadcastTo.toList());
-
-  @override
-  BroadcastEntity operator +(Component c) {
-    checkIsAlive();
-    final oldC = _components[c.runtimeType];
-    _components[c.runtimeType] = c;
-    _mainObserver.exchanged(this, oldC, c);
-    for (var o in _observerList) {
-      o.exchanged(this, oldC, c);
-    }
-
-    for (var e in entities) {
-      final _ = e + c;
-    }
-    return this;
-  }
-
-  @override
-  BroadcastEntity operator -(Type t) {
-    checkIsAlive();
-    final c = _components[t];
-    if (c != null) {
-      _components.remove(t);
-      _mainObserver.exchanged(this, c, null);
-      for (var o in _observerList) {
-        o.exchanged(this, c, null);
-      }
-
-      for (var e in entities) {
-        final _ = e - t;
-      }
-    }
-    return this;
-  }
 }
 
 /// EntityMatcher can be understood as a query. It can be used to checks if an [Entity] complies with provided rules.
@@ -614,46 +495,6 @@ class EntityManager implements EntityObserver {
     return e;
   }
 
-  /// The only way how users can create new entities.
-  /// ### Example
-  ///   EntityManager em = EntityManager();
-  ///   Entity e = em.createEntity();
-  ///
-  /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
-  /// At the end it will notify own observers that an eneitty was created.
-  BlacklistEntity createBlacklistEntity([List<Type> blacklist = const []]) {
-    final e = BlacklistEntity._(_currentEntityIndex, this, Set.from(blacklist));
-    _entities[_currentEntityIndex] = e;
-    _currentEntityIndex++;
-    for (final g in _groupsByMatcher.values) {
-      e.addObserver(g);
-    }
-    for (final o in _observerList) {
-      o.entityCreated(e);
-    }
-    return e;
-  }
-
-  /// The only way how users can create new entities.
-  /// ### Example
-  ///   EntityManager em = EntityManager();
-  ///   Entity e = em.createEntity();
-  ///
-  /// During creation the entity will receive a creation index id and it will receive all group as observers, becuase every entity might become part of the group at some point.
-  /// At the end it will notify own observers that an eneitty was created.
-  BroadcastEntity createBroadcastEntity() {
-    final e = BroadcastEntity._(_currentEntityIndex, this);
-    _entities[_currentEntityIndex] = e;
-    _currentEntityIndex++;
-    for (final g in _groupsByMatcher.values) {
-      e.addObserver(g);
-    }
-    for (final o in _observerList) {
-      o.entityCreated(e);
-    }
-    return e;
-  }
-
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
@@ -726,14 +567,6 @@ class EntityManager implements EntityObserver {
 
   /// Returns [Entity] instance which hold the unique component, or `null`.
   Entity getUniqueEntity<T extends UniqueComponent>() {
-    return _uniqueEntities[T];
-  }
-
-  BlacklistEntity getUniqueBlacklistEntity<T extends UniqueComponent>() {
-    return _uniqueEntities[T];
-  }
-
-  BroadcastEntity getUniqueBroadcastEntity<T extends UniqueComponent>() {
     return _uniqueEntities[T];
   }
 

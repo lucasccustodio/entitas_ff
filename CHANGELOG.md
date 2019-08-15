@@ -1,5 +1,8 @@
 # Changelog
 
+# 0.2.4
+- BREAKING CHANGE: Removed BlacklistEntity/BroadcastEntity entities and incorporated blacklist functionality to *EntityObservingWidgets, but the broadcast mode didn't pan out like intended with the current Entitas design (will work more on it later).
+
 # 0.2.4+1
 - New convenience methods for the new Blacklist/Broadcast entities.
 
