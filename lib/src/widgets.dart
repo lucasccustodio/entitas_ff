@@ -418,23 +418,23 @@ class AnimatableEntityObservingWidgetState<
 
   @override
   void exchanged(ObservableEntity e, Component oldC, Component newC) {
-    if (widget.blacklist.contains(oldC.runtimeType) ||
-        widget.blacklist.contains(newC.runtimeType)) {
-      print('blocked');
-      return;
-    }
-
     if (oldC == null && newC != null) {
+      if (widget.blacklist.contains(newC.runtimeType)) return;
+
       final animate =
           widget.animateAdded?.call(newC) ?? EntityAnimation.forward;
 
       _playAnimation(animate);
     } else if (oldC != null && newC != null) {
+      if (widget.blacklist.contains(newC.runtimeType)) return;
+
       final animate =
           widget.animateUpdated?.call(oldC, newC) ?? EntityAnimation.forward;
 
       _playAnimation(animate);
     } else if (oldC != null && newC == null) {
+      if (widget.blacklist.contains(oldC.runtimeType)) return;
+
       final animate =
           widget.animateRemoved?.call(oldC) ?? EntityAnimation.forward;
 
