@@ -250,15 +250,15 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
   @override
   void exchanged(ObservableEntity e, Component oldC, Component newC) {
     if (oldC == null && newC != null) {
-      if (widget.blacklist.contains(newC)) return;
+      if (widget.blacklist.contains(newC.runtimeType)) return;
 
       if (widget.rebuildAdded?.call(newC) ?? true) _update();
     } else if (oldC != null && newC != null) {
-      if (widget.blacklist.contains(newC)) return;
+      if (widget.blacklist.contains(newC.runtimeType)) return;
 
       if (widget.rebuildUpdated?.call(oldC, newC) ?? true) _update();
     } else {
-      if (widget.blacklist.contains(oldC)) return;
+      if (widget.blacklist.contains(oldC.runtimeType)) return;
       if (widget.rebuildRemoved?.call(oldC) ?? true) _update();
     }
   }
