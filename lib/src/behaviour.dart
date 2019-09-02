@@ -19,7 +19,6 @@ abstract class CleanupSystem extends System {
   void cleanup();
 }
 
-/// An interface which user needs to implement in order to mark a class a exit system.
 abstract class ExitSystem extends System {
   void exit();
 }
@@ -277,12 +276,9 @@ class RootSystem extends EntitySystem
   // holds reference to [EntityManager] instance
   final EntityManager _entityManager;
 
-  // Callback for when the root system is created
   RootLifecycleCallback _onCreate;
-  // Callback for when the root system is destroyed
   RootLifecycleCallback _onDestroy;
 
-  // Delegate to the callback, if any
   void onCreate() => _onCreate?.call(_entityManager);
   void onDestroy() => _onDestroy?.call(_entityManager);
 
@@ -367,7 +363,7 @@ class ReactiveRootSystem extends RootSystem
   /// Implementation of [EntityObserver].
   /// Please don't call directly.
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     if (_shouldExecute) {
       return;
     }
@@ -409,7 +405,7 @@ typedef FeatureLifecycleCallback = void Function(
     EntityManager featureEntityManager, EntityManager rootEntityManager);
 
 /// FeatureSystem is a modified version of [RootSystem].
-/// Its [EntityManager] instance is internal and meant for isolated usage, when changes aren't always guaranteed to be persisted or needed, or to avoid having unecessary systems running alongside ie: registration forms, splash screens, dialogs, etc.
+/// Its [EntityManager] instance is internal and meant for temporary usage as opposed to [RootSystem] ex: user registration, splash screens, dialogs, etc.
 class FeatureSystem extends EntitySystem
     implements InitSystem, ExecuteSystem, CleanupSystem, ExitSystem {
   FeatureSystem(
@@ -452,8 +448,6 @@ class FeatureSystem extends EntitySystem
   void onCreate() => _onCreate?.call(entityManager, _rootEntityManager);
   void onDestroy() {
     _onDestroy?.call(entityManager, _rootEntityManager);
-
-    // Failsafe
     for (final e in entityManager.entities) {
       e.destroy();
     }

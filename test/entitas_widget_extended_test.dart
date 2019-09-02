@@ -19,19 +19,19 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget.extended(
+          home: AnimatableEntityObservingWidget(
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
             animateUpdated: (oldC, newC) {
-              return (newC is CounterComponent && newC.counter == 0)
+              return (newC is CounterComponent && newC.value == 0)
                   ? EntityAnimation.reverse
                   : EntityAnimation.forward;
             },
             builder: (entity, animations, context) {
               return Column(
                 children: <Widget>[
-                  Text("Counter: ${entity.get<CounterComponent>().counter}"),
+                  Text("Counter: ${entity.get<CounterComponent>().value}"),
                   Text("Animation: ${animations['counter'].value}")
                 ],
               );
@@ -49,7 +49,7 @@ main() {
 
     /// Increase the counter
     testEntityManager.updateUnique<CounterComponent>(
-        (old) => CounterComponent(old.counter + 1));
+        (old) => CounterComponent(old.value + 1));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();
@@ -87,20 +87,20 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget.extended(
+          home: AnimatableEntityObservingWidget(
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
             onAnimationEnd: print,
             animateUpdated: (oldC, newC) {
-              return (newC is CounterComponent && newC.counter == 0)
+              return (newC is CounterComponent && newC.value == 0)
                   ? EntityAnimation.reverse
                   : EntityAnimation.forward;
             },
             builder: (entity, animations, context) {
               return Column(
                 children: <Widget>[
-                  Text("Counter: ${entity.get<CounterComponent>().counter}"),
+                  Text("Counter: ${entity.get<CounterComponent>().value}"),
                   Text("Animation: ${animations['counter'].value}")
                 ],
               );
@@ -118,7 +118,7 @@ main() {
 
     /// Increase the counter
     testEntityManager.updateUnique<CounterComponent>(
-        (old) => CounterComponent(old.counter + 1));
+        (old) => CounterComponent(old.value + 1));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();
@@ -142,8 +142,7 @@ main() {
     expect(find.text("Animation: 0"), findsOneWidget);
   });
 
-  testWidgets('AnimatableEntityObservingWidget [Entity provided]',
-      (tester) async {
+  testWidgets('AnimatableEntityObservingWidget [Entity provided]', (tester) async {
     /// Instantiate our EntityManager
     var testEntityManager = EntityManager();
 
@@ -155,7 +154,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget.extended(
+          home: AnimatableEntityObservingWidget(
             provider: (em) => entity,
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
@@ -234,7 +233,7 @@ main() {
             builder: (entity, animations, context) {
               return Column(
                 children: <Widget>[
-                  Text("Counter: ${entity.get<CounterComponent>().counter}"),
+                  Text("Counter: ${entity.get<CounterComponent>().value}"),
                   Text("Animation: ${animations['counter'].value}")
                 ],
               );
@@ -252,7 +251,7 @@ main() {
 
     /// Increase the counter
     testEntityManager.updateUnique<CounterComponent>(
-        (old) => CounterComponent(old.counter + 1));
+        (old) => CounterComponent(old.value + 1));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();
@@ -285,7 +284,7 @@ main() {
             builder: (entity, animations, context) {
               return Column(
                 children: <Widget>[
-                  Text("Counter: ${entity.get<CounterComponent>()?.counter}"),
+                  Text("Counter: ${entity.get<CounterComponent>()?.value}"),
                   Text("Animation: ${animations['counter'].value}")
                 ],
               );

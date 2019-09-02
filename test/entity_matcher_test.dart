@@ -118,4 +118,15 @@ void main() {
 
     expect(matcherWithSelected.matches(entity), false);
   });
+
+  test('Matcher stric mode', () {
+    var entityManager = EntityManager();
+
+    var entity = entityManager.createEntity()..set(Name('Jack'))..set(Age(0));
+
+    var matcher =
+        EntityMatcher.strict(all: [Name, Age], values: {Name: EqualComponents(Name('John'))});
+
+    expect(matcher.matches(entity), false);
+  });
 }

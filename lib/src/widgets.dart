@@ -1,7 +1,7 @@
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
-import 'package:entitas_ff/src/state.dart';
-import 'package:entitas_ff/src/behaviour.dart';
+import 'state.dart';
+import 'behaviour.dart';
 
 /// Widget that can expose an [EntityManager] instance to its sub-tree.
 /// By default it accepts an [RootSystem] instance and executes it appropriately, if present.
@@ -38,7 +38,6 @@ class EntityManagerProvider extends InheritedWidget {
   static EntityManagerProvider of(BuildContext context) =>
       context.inheritFromWidgetOfExactType(EntityManagerProvider);
 
-  // Returns a valid EntityManager instance in case of Feature
   EntityManager get entityManager =>
       _entityManager ?? (child as _FeatureSystemWidget).entityManager;
 
@@ -71,7 +70,6 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
     return widget.child;
   }
 
-  // Start the ticker, call init systems and the lifecycle callback
   @override
   void initState() {
     super.initState();
@@ -80,7 +78,6 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
     _ticker = createTicker(tick)..start();
   }
 
-  // Stop the ticker, call exit systems and the lifecycle callback
   @override
   void dispose() {
     _ticker
@@ -91,7 +88,6 @@ class _RootSystemWidgetState extends State<_RootSystemWidget>
     super.dispose();
   }
 
-  // call execute systems on every tick and then cleanup
   void tick(Duration elapsed) {
     widget.system.execute();
     widget.system.cleanup();
@@ -124,7 +120,6 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
     return widget.child;
   }
 
-  // Start the ticker, call init systems and the lifecycle callback
   @override
   void initState() {
     super.initState();
@@ -133,7 +128,6 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
     _ticker = createTicker(tick)..start();
   }
 
-  // Stop the ticker, call exit systems and schedule the lifecycle callback
   @override
   void dispose() {
     _ticker
@@ -145,7 +139,6 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
     super.dispose();
   }
 
-  // call execute systems on every tick and then cleanup
   void tick(Duration elapsed) {
     widget.system.execute();
     widget.system.cleanup();
@@ -155,15 +148,15 @@ class _FeatureSystemWidgetState extends State<_FeatureSystemWidget>
 /// Defines a function which given an [EntityManager] instance returns a reference to an [Entity].
 typedef EntityProvider = ObservableEntity Function(EntityManager entityManager);
 
-/// Callback for when a [Component] is added.
-typedef ComponentAddedCallback = bool Function(Component c);
+/// Callback for when a [ComponentMixin] is added.
+typedef ComponentAddedCallback = bool Function(ComponentMixin c);
 
-/// Callback for when a [Component] is updated;
+/// Callback for when a [ComponentMixin] is updated;
 typedef ComponentUpdatedCallback = bool Function(
-    Component oldC, Component newC);
+    ComponentMixin oldC, ComponentMixin newC);
 
-/// Callback for when [Component] is removed;
-typedef ComponentRemovedCallback = bool Function(Component c);
+/// Callback for when [ComponentMixin] is removed;
+typedef ComponentRemovedCallback = bool Function(ComponentMixin c);
 
 /// Defines a function which given an [Entity] (can be `null`) and [BuildContext] returns a an instance of [Widget].
 typedef EntityWidgetBuilder = Widget Function(
@@ -179,7 +172,6 @@ abstract class EntityObservableWidget extends StatefulWidget {
   final List<Type> blacklist;
 }
 
-// Mixin for a widget that observes an Entity
 mixin EntityWidget<T extends EntityObservableWidget> on State<T>
     implements EntityObserver {
   ObservableEntity _entity;
@@ -214,7 +206,7 @@ mixin EntityWidget<T extends EntityObservableWidget> on State<T>
   }
 }
 
-/// Widget that rebuilds when its observing [Entity] add, update or remove a [Component], if it's not in the blacklist.
+/// Widget that rebuilds when its observing [Entity] add, update or remove a [ComponentMixin].
 class EntityObservingWidget extends EntityObservableWidget {
   /// Default constructor for EntityObservingWidget
   const EntityObservingWidget(
@@ -255,9 +247,8 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
     return widget.builder(_entity, context);
   }
 
-  // Update the widget if the change passed all callbacks
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     if (oldC == null && newC != null) {
       if (widget.blacklist.contains(newC.runtimeType)) return;
 
@@ -277,20 +268,19 @@ class EntityObservingWidgetState extends State<EntityObservingWidget>
 typedef AnimatableEntityWidgetBuilder<E extends ObservableEntity> = Widget
     Function(E entity, Map<String, Animation> animations, BuildContext context);
 
-/// None = Update without animating, ignore = Don't update at all
 enum EntityAnimation { none, forward, reverse, ignore }
 
-/// Callback for when a [Component] is added.
+/// Callback for when a [ComponentMixin] is added.
 typedef AnimatableComponentAddedCallback = EntityAnimation Function(
-    Component c);
+    ComponentMixin c);
 
-/// Callback for when a [Component] is updated;
+/// Callback for when a [ComponentMixin] is updated;
 typedef AnimatableComponentUpdatedCallback = EntityAnimation Function(
-    Component oldC, Component newC);
+    ComponentMixin oldC, ComponentMixin newC);
 
-/// Callback for when [Component] is removed;
+/// Callback for when [ComponentMixin] is removed;
 typedef AnimatableComponentRemovedCallback = EntityAnimation Function(
-    Component c);
+    ComponentMixin c);
 
 /// Base class for [AnimatableEntityObservingWidget]
 abstract class AnimatableObservableWidget extends EntityObservableWidget {
@@ -313,7 +303,7 @@ abstract class AnimatableObservableWidget extends EntityObservableWidget {
   final void Function(bool reversed) onAnimationEnd;
 }
 
-/// Mixin for [EntityWidget] that can be animated
+/// Mixin for [AnimatableEntityObservingWidget]
 mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     implements
         EntityObserver,
@@ -322,7 +312,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
   Map<String, Animation> _animations;
   AnimationController _controller;
 
-  // Widget configuration changed so update animations
   @override
   void didUpdateWidget(AnimatableObservableWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -340,7 +329,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     }
   }
 
-  // Attach listeners and set up the animations
   @override
   void initState() {
     super.initState();
@@ -351,7 +339,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     _updateAnimations();
   }
 
-  // Handles callbacks for the animation
   void _updateStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
       widget.onAnimationEnd?.call(false);
@@ -360,7 +347,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
     }
   }
 
-  // Update the animation according to the criteria
   void _playAnimation(EntityAnimation animation) {
     if (animation == EntityAnimation.ignore) {
       return;
@@ -372,7 +358,6 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
       _controller.reverse(from: 1);
   }
 
-  // Detach listeners
   @override
   void destroyed(ObservableEntity e) {
     _controller
@@ -381,47 +366,16 @@ mixin AnimatableEntityWidget<T extends AnimatableObservableWidget> on State<T>
       ..removeStatusListener(_updateStatus);
   }
 
-  // Remove listeners and dispose of controller
   @override
   void dispose() {
-    _controller
-      ..stop()
-      ..removeListener(_update)
-      ..removeStatusListener(_updateStatus)
-      ..dispose();
+    _controller.dispose();
     super.dispose();
   }
 }
 
-/// Widget that rebuilds when its [Entity] reference add, update or remove a [Component], that also can play one or more [Animation]s.
+/// Widget that rebuilds when its [Entity] reference add, update or remove a [ComponentMixin], that also can play one or more [Animation]s according to the result of animateAdded, animateUpdated and animateRemoved respectively.
 class AnimatableEntityObservingWidget extends AnimatableObservableWidget {
   const AnimatableEntityObservingWidget(
-      {@required EntityProvider provider,
-      @required this.builder,
-      @required Map<String, Tween> tweens,
-      List<Type> blacklist = const [],
-      Key key,
-      Curve curve = Curves.linear,
-      Duration duration = const Duration(milliseconds: 300),
-      bool startAnimating = true,
-      void Function(bool) onAnimationEnd,
-      AnimationController controller})
-      : animateRemoved = null,
-        animateAdded = null,
-        animateUpdated = null,
-        super(
-            key: key,
-            provider: provider,
-            curve: curve,
-            duration: duration,
-            tweens: tweens,
-            blacklist: blacklist,
-            startAnimating: startAnimating,
-            onAnimationEnd: onAnimationEnd,
-            controller: controller);
-
-  // Variant that provides finer control over when to animate due to changes
-  const AnimatableEntityObservingWidget.extended(
       {@required EntityProvider provider,
       @required this.builder,
       @required Map<String, Tween> tweens,
@@ -464,9 +418,8 @@ class AnimatableEntityObservingWidgetState<
   Widget build(BuildContext context) =>
       widget.builder(_entity, _animations, context);
 
-  // Animate, rebuild or do nothing depending on the blacklist and callback results
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     if (oldC == null && newC != null) {
       if (widget.blacklist.contains(newC.runtimeType)) return;
 
@@ -496,7 +449,6 @@ class AnimatableEntityObservingWidgetState<
 typedef GroupWidgetBuilder = Widget Function(
     EntityGroup group, BuildContext context);
 
-/// Interface for a widget that observes changes in an EntityGroup
 abstract class GroupObservableWidget extends StatefulWidget {
   const GroupObservableWidget(
       {@required this.matcher, @required this.builder, Key key})
@@ -506,10 +458,19 @@ abstract class GroupObservableWidget extends StatefulWidget {
   final GroupWidgetBuilder builder;
 }
 
-/// Mixing for widget that observes an [EntityGroup]
 mixin GroupObservable<T extends GroupObservableWidget> on State<T>
     implements GroupObserver {
   EntityGroup _group;
+
+  @override
+  void didUpdateWidget(oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    final manager = EntityManagerProvider.of(context).entityManager;
+    assert(manager != null, '$widget is not a child of GroupObservingWidget');
+    _group?.removeObserver(this);
+    _group = manager.groupMatching(widget.matcher)..addObserver(this);
+  }
 
   @override
   void didChangeDependencies() {
@@ -553,7 +514,6 @@ mixin GroupObservable<T extends GroupObservableWidget> on State<T>
   }
 }
 
-/// Widget that observes changes in a EntityGroup
 class GroupObservingWidget extends GroupObservableWidget {
   const GroupObservingWidget(
       {@required EntityMatcher matcher, @required GroupWidgetBuilder builder})
@@ -563,6 +523,5 @@ class GroupObservingWidget extends GroupObservableWidget {
   GroupObservingWidgetState createState() => GroupObservingWidgetState();
 }
 
-/// State class for [GroupObservingWidget]
 class GroupObservingWidgetState extends State<GroupObservingWidget>
     with GroupObservable {}

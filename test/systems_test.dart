@@ -13,8 +13,8 @@ class _MoveSystem extends EntityManagerSystem
   @override
   execute() {
     for (var e in _movable.entities) {
-      var posX = e.get<Position>().x + e.get<Velocity>().x;
-      var posY = e.get<Position>().y + e.get<Velocity>().y;
+      var posX = e.get<Position>().value.x + e.get<Velocity>().value.x;
+      var posY = e.get<Position>().value.y + e.get<Velocity>().value.y;
       e.set(Position(posX, posY));
     }
   }
@@ -23,7 +23,7 @@ class _MoveSystem extends EntityManagerSystem
   cleanup() {
     for (var e in _movable.entities) {
       var pos = e.get<Position>();
-      if (pos.x > 100 || pos.y > 100) {
+      if (pos.value.x > 100 || pos.value.y > 100) {
         e.destroy();
       }
     }
@@ -39,8 +39,8 @@ class _InteractiveMoveSystem extends ReactiveSystem implements CleanupSystem {
   @override
   void executeWith(List<ObservableEntity> entities) {
     for (var e in entities) {
-      var posX = e.get<Position>().x + 1;
-      var posY = e.get<Position>().y + 1;
+      var posX = e.get<Position>().value.x + 1;
+      var posY = e.get<Position>().value.y + 1;
       e.set(Position(posX, posY));
     }
   }
@@ -68,8 +68,8 @@ class _TriggeredMoveSystem extends TriggeredSystem implements InitSystem {
   @override
   executeOnChange() {
     for (var e in _movable.entities) {
-      var posX = e.get<Position>().x + 1;
-      var posY = e.get<Position>().y + 1;
+      var posX = e.get<Position>().value.x + 1;
+      var posY = e.get<Position>().value.y + 1;
       e.set(Position(posX, posY));
     }
   }
@@ -97,11 +97,11 @@ void main() {
     expect(e1.isAlive, true);
     expect(e2.isAlive, true);
 
-    expect(e1.get<Position>().x, 100);
-    expect(e1.get<Position>().y, 0);
+    expect(e1.get<Position>().value.x, 100);
+    expect(e1.get<Position>().value.y, 0);
 
-    expect(e2.get<Position>().x, 0);
-    expect(e2.get<Position>().y, 100);
+    expect(e2.get<Position>().value.x, 0);
+    expect(e2.get<Position>().value.y, 100);
 
     root.execute();
     root.cleanup();
@@ -129,33 +129,33 @@ void main() {
     expect(e1.isAlive, true);
     expect(e2.isAlive, true);
 
-    expect(e1.get<Position>().x, 0);
-    expect(e1.get<Position>().y, 0);
+    expect(e1.get<Position>().value.x, 0);
+    expect(e1.get<Position>().value.y, 0);
 
-    expect(e2.get<Position>().x, 0);
-    expect(e2.get<Position>().y, 0);
+    expect(e2.get<Position>().value.x, 0);
+    expect(e2.get<Position>().value.y, 0);
 
     e1 += Selected();
 
     root.execute();
     root.cleanup();
 
-    expect(e1.get<Position>().x, 1);
-    expect(e1.get<Position>().y, 1);
+    expect(e1.get<Position>().value.x, 1);
+    expect(e1.get<Position>().value.y, 1);
 
-    expect(e2.get<Position>().x, 0);
-    expect(e2.get<Position>().y, 0);
+    expect(e2.get<Position>().value.x, 0);
+    expect(e2.get<Position>().value.y, 0);
 
     e2 += Selected();
 
     root.execute();
     root.cleanup();
 
-    expect(e1.get<Position>().x, 1);
-    expect(e1.get<Position>().y, 1);
+    expect(e1.get<Position>().value.x, 1);
+    expect(e1.get<Position>().value.y, 1);
 
-    expect(e2.get<Position>().x, 1);
-    expect(e2.get<Position>().y, 1);
+    expect(e2.get<Position>().value.x, 1);
+    expect(e2.get<Position>().value.y, 1);
 
     expect(e1.hasT<Selected>(), false);
     expect(e2.hasT<Selected>(), false);
@@ -177,11 +177,11 @@ void main() {
       root.cleanup();
     }
 
-    expect(e1.get<Position>().x, 0);
-    expect(e1.get<Position>().y, 0);
+    expect(e1.get<Position>().value.x, 0);
+    expect(e1.get<Position>().value.y, 0);
 
-    expect(e2.get<Position>().x, 0);
-    expect(e2.get<Position>().y, 0);
+    expect(e2.get<Position>().value.x, 0);
+    expect(e2.get<Position>().value.y, 0);
 
     for (var i = 0; i < 100; i++) {
       em.setUnique(Selected());
@@ -189,11 +189,11 @@ void main() {
       root.cleanup();
     }
 
-    expect(e1.get<Position>().x, 100);
-    expect(e1.get<Position>().y, 100);
+    expect(e1.get<Position>().value.x, 100);
+    expect(e1.get<Position>().value.y, 100);
 
-    expect(e2.get<Position>().x, 100);
-    expect(e2.get<Position>().y, 100);
+    expect(e2.get<Position>().value.x, 100);
+    expect(e2.get<Position>().value.y, 100);
   });
 
   test('Feature system', () {
@@ -209,7 +209,7 @@ void main() {
     root.execute();
 
     /// Root's counter incremented by 1
-    expect(rootEM.getUnique<CounterComponent>().counter, 1);
+    expect(rootEM.getUnique<CounterComponent>().value, 1);
 
     /// Declare FeatureSystem that holds its own EntityManager and a reference to Root's EntityManager
     var feature = FeatureSystem(
@@ -227,26 +227,26 @@ void main() {
     feature.onCreate();
 
     /// Feature's counter starts at 1
-    expect(feature.entityManager.getUnique<CounterComponent>().counter, 1);
+    expect(feature.entityManager.getUnique<CounterComponent>().value, 1);
 
     for (var i = 0; i < 5; i++) feature.execute();
 
     /// Feature's counter incremented by 5
-    expect(feature.entityManager.getUnique<CounterComponent>().counter, 6);
+    expect(feature.entityManager.getUnique<CounterComponent>().value, 6);
 
     /// Root's counter unchanged
-    expect(rootEM.getUnique<CounterComponent>().counter, 1);
+    expect(rootEM.getUnique<CounterComponent>().value, 1);
 
     root.execute();
 
     /// Root's counter incremented by 1
-    expect(rootEM.getUnique<CounterComponent>().counter, 2);
+    expect(rootEM.getUnique<CounterComponent>().value, 2);
 
     /// Destroy Feature
     feature.onDestroy();
 
     /// Root's counter equal to Feature's last counter
-    expect(rootEM.getUnique<CounterComponent>().counter, 6);
+    expect(rootEM.getUnique<CounterComponent>().value, 6);
   });
 }
 
@@ -254,6 +254,6 @@ class UpdateCounter extends EntityManagerSystem implements ExecuteSystem {
   @override
   execute() {
     entityManager.updateUnique<CounterComponent>(
-        (oldCounter) => CounterComponent(oldCounter.counter + 1));
+        (oldCounter) => CounterComponent(oldCounter.value + 1));
   }
 }

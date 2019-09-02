@@ -5,19 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'components.dart';
 
 //An UniqueComponent can only be held by a single entity at a time
-class TestComponent extends UniqueComponent {
-  TestComponent(this.counter);
+class TestComponent = ComponentData<int> with UniqueMixin;
 
-  final int counter;
-}
+class CounterComponent = ComponentData<int> with ComponentMixin;
 
-class CounterComponent extends Component {
-  CounterComponent(this.counter);
-
-  final int counter;
-}
-
-class IsMatchComponent extends Component {}
+class IsMatchComponent = TagComponent with ComponentMixin;
 
 void main() async {
   testWidgets('EntityManagerProvider', (widgetTester) async {
@@ -31,7 +23,7 @@ void main() async {
         home: Builder(
           builder: (context) {
             final em = EntityManagerProvider.of(context).entityManager;
-            final counter = em.getUnique<TestComponent>().counter;
+            final counter = em.getUnique<TestComponent>().value;
 
             return Text('Counter: $counter');
           },
@@ -54,7 +46,7 @@ void main() async {
         home: EntityObservingWidget(
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) =>
-                Text('Counter: ${entity.get<TestComponent>().counter}')),
+                Text('Counter: ${entity.get<TestComponent>().value}')),
       ),
     ));
 
@@ -63,7 +55,7 @@ void main() async {
 
     /// Increase the counter
     testEntityManager
-        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+        .updateUnique<TestComponent>((old) => TestComponent(old.value + 1));
 
     /// Advance one frame
     await widgetTester.pump(Duration.zero);
@@ -88,7 +80,7 @@ void main() async {
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
-                Text('Counter: ${entity.get<TestComponent>().counter}'),
+                Text('Counter: ${entity.get<TestComponent>().value}'),
                 if (entity.hasT<IsSelected>())
                   Text('Selected: ${entity.get<IsSelected>().value}')
               ],
@@ -141,7 +133,7 @@ void main() async {
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
-                Text('Counter: ${entity.get<TestComponent>().counter}'),
+                Text('Counter: ${entity.get<TestComponent>().value}'),
                 if (entity.hasT<IsSelected>())
                   Text('Selected: ${entity.get<IsSelected>().value}')
               ],
@@ -159,7 +151,7 @@ void main() async {
 
     /// Increase the counter
     testEntityManager
-        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+        .updateUnique<TestComponent>((old) => TestComponent(old.value + 1));
 
     /// Advance one frame
     await widgetTester.pump(Duration.zero);
@@ -206,7 +198,7 @@ void main() async {
             provider: (em) => em.getUniqueEntity<TestComponent>(),
             builder: (entity, context) => Column(
               children: <Widget>[
-                Text('Counter: ${entity.get<TestComponent>().counter}'),
+                Text('Counter: ${entity.get<TestComponent>().value}'),
                 if (entity.hasT<IsSelected>())
                   Text('Selected: ${entity.get<IsSelected>().value}')
               ],
@@ -224,7 +216,7 @@ void main() async {
 
     /// Increase the counter
     testEntityManager
-        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+        .updateUnique<TestComponent>((old) => TestComponent(old.value + 1));
 
     /// Advance one frame
     await widgetTester.pump(Duration.zero);
@@ -301,7 +293,7 @@ void main() async {
               body: EntityObservingWidget(
                 provider: (em) => em.getUniqueEntity<TestComponent>(),
                 builder: (entity, context) =>
-                    Text('Counter: ${entity.get<TestComponent>().counter}'),
+                    Text('Counter: ${entity.get<TestComponent>().value}'),
               ),
             );
           },
@@ -349,7 +341,7 @@ void main() async {
                                 /// When created sets the initial counter to Root's
                                 onCreate: (em, root) {
                                   final counter =
-                                      root.getUnique<TestComponent>().counter;
+                                      root.getUnique<TestComponent>().value;
 
                                   /// Uncomment to see how the lifecycle works
                                   /* print(
@@ -360,7 +352,7 @@ void main() async {
                                 /// When destroyed set Root's counter to the last known value
                                 onDestroy: (em, root) {
                                   final counter =
-                                      em.getUnique<TestComponent>().counter;
+                                      em.getUnique<TestComponent>().value;
 
                                   /// Uncomment to see how the lifecycle works
                                   /* print(
@@ -374,7 +366,7 @@ void main() async {
             body: EntityObservingWidget(
               provider: (em) => em.getUniqueEntity<TestComponent>(),
               builder: (e, context) =>
-                  Text('Counter: ${e.get<TestComponent>().counter}'),
+                  Text('Counter: ${e.get<TestComponent>().value}'),
             ),
           ),
         )),
@@ -407,6 +399,6 @@ class TestSystem extends EntityManagerSystem implements ExecuteSystem {
   @override
   void execute() {
     entityManager
-        .updateUnique<TestComponent>((old) => TestComponent(old.counter + 1));
+        .updateUnique<TestComponent>((old) => TestComponent(old.value + 1));
   }
 }

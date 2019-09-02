@@ -1,52 +1,35 @@
 import 'package:entitas_ff/entitas_ff.dart';
+import 'package:equatable/equatable.dart';
 
-class CounterComponent extends UniqueComponent {
-  final int counter;
+class CounterComponent = ComponentData<int> with UniqueMixin;
 
-  CounterComponent(this.counter);
-}
+class Visible = TagComponent with ComponentMixin;
 
-class Visible implements Component {}
+class Name = ComponentData<String> with ComponentMixin;
 
-class Name implements Component {
-  final String value;
+class Age = ComponentData<int> with ComponentMixin;
 
-  Name(this.value);
-
-  @override
-  String toString() => value;
-}
-
-class Age implements Component {
-  Age(this.value);
-
-  final int value;
-}
-
-class IsSelected extends Component {
+class IsSelected extends ComponentData<bool> with ComponentMixin {
   IsSelected({this.value = false});
 
   final bool value;
 }
 
-class Selected implements UniqueComponent {}
+class Selected = TagComponent with UniqueMixin;
 
-class Score implements UniqueComponent {
-  Score(this.value);
+class Score = ComponentData<int> with UniqueMixin;
 
-  final int value;
-}
-
-class Position implements Component {
-  Position(this.x, this.y);
-
+class Point2d extends Equatable {
   final int x;
   final int y;
+
+  Point2d(this.x, this.y) : super([x, y]);
 }
 
-class Velocity implements Component {
-  Velocity(this.x, this.y);
+class Position extends ComponentData<Point2d> with ComponentMixin {
+  Position(int x, int y) : super(Point2d(x, y));
+}
 
-  final int x;
-  final int y;
+class Velocity extends Position {
+  Velocity(int x, int y) : super(x, y);
 }

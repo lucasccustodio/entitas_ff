@@ -1,4 +1,7 @@
+import 'dart:ui';
+
 import 'package:meta/meta.dart';
+import 'package:collection/equality.dart';
 
 /// Defines an interface which every component class needs to implement.
 ///
@@ -9,17 +12,41 @@ import 'package:meta/meta.dart';
 ///       Name(this.value);
 ///     }
 @immutable
-abstract class Component {}
+abstract class ComponentData<T> {
+  final T _value;
+
+  const ComponentData([T value]) : _value = value;
+
+  T get value => _value;
+
+  Type get type => T;
+
+  @override
+  int get hashCode => _value.hashCode;
+
+  bool operator ==(dynamic other) =>
+      other is ComponentData<T> && other._value == _value;
+
+  @override
+  String toString() => '$runtimeType {$type = $value}';
+}
 
 /// Defines an interface which every unique component class needs to implement.
 /// Unique means that there can be only one instance of this component set on an [Entity] per [EntityManager]
 ///
 /// ### Example
 ///
-///     class SelectedComponent implements UniqueComponent {}
+///     class SelectedComponent = TagComponent with UniqueComponent {}
 ///
-@immutable
-abstract class UniqueComponent extends Component {}
+mixin ComponentMixin<T> on ComponentData<T> {}
+mixin UniqueMixin<T> on ComponentData<T> implements ComponentMixin<T> {}
+
+class TagComponent extends ComponentData {
+  TagComponent() : super(null);
+
+  @override
+  Type get type => runtimeType;
+}
 
 /// Interface which you need to implement if you want to observe changes on an [Entity] instance
 abstract class EntityObserver {
@@ -30,10 +57,9 @@ abstract class EntityObserver {
   /// When a component was added, it is reflected in `newC` and `oldC` is `null`.
   /// When a component was removed, old component is reflected in `oldC` and `newC` is `null`.
   /// When a component was exchanged, old and new components are refelcted in `oldC` and `newC` respectively.
-  void exchanged(ObservableEntity e, Component oldC, Component newC);
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC);
 }
 
-// Interface for an Entity instance that can be observed for changes
 abstract class ObservableEntity {
   ObservableEntity(this.creationIndex, EntityObserver mainObserver)
       : _mainObserver = mainObserver;
@@ -46,24 +72,21 @@ abstract class ObservableEntity {
   }
 
   // Holding all components map through their type.
-  final Map<Type, Component> _components = {};
+  final Map<Type, ComponentMixin> _components = {};
   // Holding all obeservers.
   final Set<EntityObserver> _observers = {};
 
   /// Returns component instance by type or `null` if not present.
-  T get<T extends Component>() {
-    final c = _components[T];
-    if (c == null) {
-      return null;
-    }
-    return c;
-  }
+  T get<T extends ComponentMixin>() => _components[T];
+
+  /// Returns component instance by type. Necessary for EntityMatcher strict mode.
+  ComponentMixin _getT(Type t) => _components[t];
 
   /// Adds component instance to the entity.
   /// If the entity already has a component of the same instance, the component will be replaced with provided one.
   /// After the component is set, all observers are notified.
   /// Calling this operator on a destroyed entity is considerered an error.
-  ObservableEntity operator +(Component c) {
+  ObservableEntity operator +(ComponentMixin c) {
     checkIsAlive();
     final oldC = _components[c.runtimeType];
     _components[c.runtimeType] = c;
@@ -76,7 +99,7 @@ abstract class ObservableEntity {
 
   /// Internally just calls the `+` operator.
   /// Introduced inorder to support cascade notation.
-  void set(Component c) {
+  void set(ComponentMixin c) {
     final _ = this + c;
   }
 
@@ -100,7 +123,7 @@ abstract class ObservableEntity {
 
   /// Internally just calls the `-` operator.
   /// Introduced inorder to support cascade notation.
-  void remove<T extends Component>() {
+  void remove<T extends ComponentMixin>() {
     final _ = this - T;
   }
 
@@ -110,12 +133,12 @@ abstract class ObservableEntity {
   }
 
   /// Same as `has` method just with generics.
-  bool hasT<T extends Component>() {
+  bool hasT<T extends ComponentMixin>() {
     return _components.containsKey(T);
   }
 
   /// Updates a given component on Entity if present and updateTo's result isn't `null`;
-  void update<T extends Component>(T updateTo(T prev)) {
+  void update<T extends ComponentMixin>(T updateTo(T prev)) {
     if (!hasT<T>()) {
       return;
     }
@@ -188,6 +211,53 @@ class Entity extends ObservableEntity {
       : super(creationIndex, mainObserver);
 }
 
+abstract class ComponentMatcher<T, C extends ComponentMixin> {
+  final T value;
+
+  ComponentMatcher(this.value);
+
+  bool matches(C c);
+}
+
+class EqualComponents<C extends ComponentMixin> extends ComponentMatcher<C, C> {
+  EqualComponents(C value) : super(value);
+
+  @override
+  bool matches(C c) {
+    return value == c;
+  }
+}
+
+class NotEqualComponents<C extends ComponentMixin>
+    extends ComponentMatcher<C, C> {
+  NotEqualComponents(C value) : super(value);
+
+  @override
+  bool matches(C c) {
+    return value != c;
+  }
+}
+
+class ComponentInList<C extends ComponentMixin>
+    extends ComponentMatcher<List<C>, C> {
+  ComponentInList(List<C> value) : super(value);
+
+  @override
+  bool matches(C c) {
+    return value.contains(c);
+  }
+}
+
+class ComponentNotInList<C extends ComponentMixin>
+    extends ComponentMatcher<List<C>, C> {
+  ComponentNotInList(List<C> value) : super(value);
+
+  @override
+  bool matches(C c) {
+    return !value.contains(c);
+  }
+}
+
 /// EntityMatcher can be understood as a query. It can be used to checks if an [Entity] complies with provided rules.
 /// ### Example
 ///   var matcher = EntityMatcher(all: [A, B], any: [C, D] none: [E])
@@ -200,7 +270,24 @@ class EntityMatcher {
       : _all = Set.of(all ?? []),
         _any = Set.of(any ?? []),
         _none = Set.of(none ?? []),
-        _maybe = Set.of(maybe ?? []) {
+        _maybe = Set.of(maybe ?? []),
+        _strictValues = {} {
+    assert(
+        (_all != null && _all.isNotEmpty) || (_any != null && _any.isNotEmpty),
+        'Matcher needs to have all or any present');
+  }
+
+  EntityMatcher.strict(
+      {List<Type> all,
+      List<Type> any,
+      List<Type> none,
+      List<Type> maybe,
+      Map<Type, ComponentMatcher> values})
+      : _all = Set.of(all ?? []),
+        _any = Set.of(any ?? []),
+        _none = Set.of(none ?? []),
+        _maybe = Set.of(maybe ?? []),
+        _strictValues = Map<Type, ComponentMatcher>.from(values ?? {}) {
     assert(
         (_all != null && _all.isNotEmpty) || (_any != null && _any.isNotEmpty),
         'Matcher needs to have all or any present');
@@ -210,8 +297,8 @@ class EntityMatcher {
   final Set<Type> _any;
   final Set<Type> _none;
   final Set<Type> _maybe;
+  final Map<Type, ComponentMatcher> _strictValues;
 
-  // Returns a copy of this matcher with provided fields changed
   EntityMatcher copyWith(
           {List<Type> all,
           List<Type> none,
@@ -223,7 +310,6 @@ class EntityMatcher {
           any: any ?? _any.toList(),
           maybe: maybe ?? _maybe.toList());
 
-  // Returns a copy of this matcher with provided fields extended
   EntityMatcher extend(
           {List<Type> all,
           List<Type> none,
@@ -238,8 +324,14 @@ class EntityMatcher {
   /// Checks if the [Entity] contains necessary components.
   bool matches(ObservableEntity e) {
     for (var t in _all) {
-      if (e.has(t) == false) {
-        return false;
+      final value = e._getT(t);
+
+      if (value == null) return false;
+
+      if (_strictValues.containsKey(t)) {
+        final matcher = _strictValues[t];
+
+        if (!matcher.matches(value)) return false;
       }
     }
     for (var t in _none) {
@@ -279,16 +371,18 @@ class EntityMatcher {
               _all.difference(other._all).isEmpty &&
               _any.difference(other._any).isEmpty &&
               _none.difference(other._none).isEmpty) &&
-          _maybe.difference(other._maybe).isEmpty;
+          _maybe.difference(other._maybe).isEmpty &&
+          MapEquality().equals(other._strictValues, _strictValues);
 
-  /// Different matchers with same `all`, `any`, `none`, `maybe` need to return equal hash code.
+  /// Different matchers with same `all`, `any`, `none` need to return equal hash code.
   @override
   int get hashCode {
     final a = _all.fold(0, (sum, t) => t.hashCode ^ sum);
     final b = _any.fold(a << 4, (sum, t) => t.hashCode ^ sum);
     final c = _none.fold(b << 4, (sum, t) => t.hashCode ^ sum);
     final d = _maybe.fold(c << 4, (sum, t) => t.hashCode ^ sum);
-    return d;
+    final e = d ^ MapEquality().hash(_strictValues);
+    return e;
   }
 }
 
@@ -364,7 +458,7 @@ class EntityGroup implements EntityObserver {
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     final isRelevantAdd =
         newC != null && matcher.containsType(newC.runtimeType);
     final isRelevantRemove =
@@ -508,8 +602,8 @@ class EntityManager implements EntityObserver {
   /// Group is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
-    if (newC is UniqueComponent || oldC is UniqueComponent) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
+    if (newC is UniqueMixin || oldC is UniqueMixin) {
       if (oldC != null && newC == null) {
         _uniqueEntities.remove(oldC.runtimeType);
       }
@@ -526,12 +620,12 @@ class EntityManager implements EntityObserver {
 
   /// Lets user set a unique component, which either exchanges a component on already existing entity, or creates a new entity and sets component on it.
   /// [Entity] which holds the unique component is returned
-  Entity setUnique(UniqueComponent c) {
+  Entity setUnique(UniqueMixin c) {
     var e = _uniqueEntities[c.runtimeType] ?? createEntity();
     return e += c;
   }
 
-  void updateUnique<T extends UniqueComponent>(T Function(T old) updateTo) =>
+  void updateUnique<T extends UniqueMixin>(T Function(T old) updateTo) =>
       getUniqueEntity<T>()?.update<T>(updateTo);
 
   /// Sets a unique component on a provided [Entity].
@@ -542,7 +636,7 @@ class EntityManager implements EntityObserver {
   ///   entityManager.setUniqueOnEntity(Selected(), e2);
   ///   assert(e1.has(Selected) == false);
   ///   assert(e2.has(Selected) == true);
-  Entity setUniqueOnEntity(UniqueComponent c, Entity e) {
+  Entity setUniqueOnEntity(UniqueMixin c, Entity e) {
     var prevE = _uniqueEntities[c.runtimeType];
     if (prevE != null) {
       prevE -= c.runtimeType;
@@ -552,7 +646,7 @@ class EntityManager implements EntityObserver {
 
   /// Removes unqiue component on an entity.
   /// If entity does not have any other components after removal, it is destroyed.
-  void removeUnique<T extends UniqueComponent>() {
+  void removeUnique<T extends UniqueMixin>() {
     final e = _uniqueEntities[T];
     if (e == null) {
       return;
@@ -564,12 +658,12 @@ class EntityManager implements EntityObserver {
   }
 
   /// Returns the component instance or `null`.
-  T getUnique<T extends UniqueComponent>() {
+  T getUnique<T extends UniqueMixin>() {
     return _uniqueEntities[T]?.get<T>();
   }
 
   /// Returns [Entity] instance which hold the unique component, or `null`.
-  Entity getUniqueEntity<T extends UniqueComponent>() {
+  Entity getUniqueEntity<T extends UniqueMixin>() {
     return _uniqueEntities[T];
   }
 
@@ -625,8 +719,8 @@ class EntityManager implements EntityObserver {
   }
 }
 
-/// Defines a function which given a [Component] instance can produce a key which is used in a [Map]
-typedef KeyProducer<C extends Component, T> = T Function(C c);
+/// Defines a function which given a [ComponentMixin] instance can produce a key which is used in a [Map]
+typedef KeyProducer<C extends ComponentMixin, T> = T Function(C c);
 
 /// A class which let users map entities against values of a component.
 /// ### Example
@@ -635,7 +729,7 @@ typedef KeyProducer<C extends Component, T> = T Function(C c);
 /// An [EntityIndex] maps only one entity to a value component.
 /// A situation, where multiple components are matching the same [EntityIndex] key is considered an error.
 /// Please use [EntityMultiIndex] to cover such scenario.
-class EntityIndex<C extends Component, T>
+class EntityIndex<C extends ComponentMixin, T>
     implements EntityObserver, EntityManagerObserver {
   EntityIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
@@ -668,7 +762,7 @@ class EntityIndex<C extends Component, T>
   /// EntityIndex is an `EntityListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     if (oldC is C || newC is C) {
       if (oldC != null) {
         _entities.remove(_keyProducer(oldC));
@@ -697,7 +791,7 @@ class EntityIndex<C extends Component, T>
 ///     var ageMap = EntityMultiIndex<Age, int>(em, (name) => name.value);
 ///
 /// It is different from [EntityIndex] in a way that it lets multiple entities match agains the same key.
-class EntityMultiIndex<C extends Component, T>
+class EntityMultiIndex<C extends ComponentMixin, T>
     implements EntityObserver, EntityManagerObserver {
   EntityMultiIndex(EntityManager entityManager, this._keyProducer) {
     entityManager.addObserver(this);
@@ -730,7 +824,7 @@ class EntityMultiIndex<C extends Component, T>
   /// EntityMultiIndex is an `EntityManagerListener`, this is an implementation of this protocol.
   /// Please don't use manually.
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {
     if (oldC is C || newC is C) {
       if (oldC != null) {
         _entities[_keyProducer(oldC)]?.remove(e);

@@ -52,5 +52,5 @@ class TestObserver implements EntityObserver {
   void destroyed(ObservableEntity e) {}
 
   @override
-  void exchanged(ObservableEntity e, Component oldC, Component newC) {}
+  void exchanged(ObservableEntity e, ComponentMixin oldC, ComponentMixin newC) {}
 }
