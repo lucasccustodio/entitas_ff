@@ -19,7 +19,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget(
+          home: AnimatableEntityObservingWidget.extended(
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
@@ -87,7 +87,7 @@ main() {
       EntityManagerProvider(
         entityManager: testEntityManager,
         child: MaterialApp(
-          home: AnimatableEntityObservingWidget(
+          home: AnimatableEntityObservingWidget.extended(
             provider: (em) => em.getUniqueEntity<CounterComponent>(),
             duration: Duration(seconds: 5),
             tweens: {'counter': IntTween(begin: 0, end: 100)},
@@ -131,6 +131,73 @@ main() {
 
     /// Set counter back to 0
     testEntityManager.setUnique(CounterComponent(0));
+
+    /// Advance until animation is completed
+    await tester.pumpAndSettle();
+
+    /// Now counter's text should be back at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// Now animation should have completed at reverse
+    expect(find.text("Animation: 0"), findsOneWidget);
+  });
+
+  testWidgets('AnimatableEntityObservingWidget [Entity provided]',
+      (tester) async {
+    /// Instantiate our EntityManager
+    var testEntityManager = EntityManager();
+
+    /// Instantiate TestComponent and set counter to 0
+    final entity = testEntityManager.createEntity()..set(Age(0));
+
+    /// Pump our EntityManagerProvider
+    await tester.pumpWidget(
+      EntityManagerProvider(
+        entityManager: testEntityManager,
+        child: MaterialApp(
+          home: AnimatableEntityObservingWidget.extended(
+            provider: (em) => entity,
+            duration: Duration(seconds: 5),
+            tweens: {'counter': IntTween(begin: 0, end: 100)},
+            onAnimationEnd: print,
+            animateUpdated: (oldC, newC) {
+              return (newC is Age && newC.value == 0)
+                  ? EntityAnimation.reverse
+                  : EntityAnimation.forward;
+            },
+            builder: (entity, animations, context) {
+              return Column(
+                children: <Widget>[
+                  Text("Counter: ${entity.get<Age>().value}"),
+                  Text("Animation: ${animations['counter'].value}")
+                ],
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    /// By default counter should be at 0
+    expect(find.text("Counter: 0"), findsOneWidget);
+
+    /// By default animation should be stopped
+    expect(find.text("Animation: 0"), findsOneWidget);
+
+    /// Increase the counter
+    entity.update<Age>((old) => Age(old.value + 1));
+
+    /// Advance until animation is completed
+    await tester.pumpAndSettle();
+
+    /// Now counter's text should be at 1
+    expect(find.text("Counter: 1"), findsOneWidget);
+
+    /// Now animation should be completed
+    expect(find.text("Animation: 100"), findsOneWidget);
+
+    /// Set counter back to 0
+    entity.set(Age(0));
 
     /// Advance until animation is completed
     await tester.pumpAndSettle();

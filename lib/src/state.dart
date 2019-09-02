@@ -33,6 +33,7 @@ abstract class EntityObserver {
   void exchanged(ObservableEntity e, Component oldC, Component newC);
 }
 
+// Interface for an Entity instance that can be observed for changes
 abstract class ObservableEntity {
   ObservableEntity(this.creationIndex, EntityObserver mainObserver)
       : _mainObserver = mainObserver;
@@ -210,6 +211,7 @@ class EntityMatcher {
   final Set<Type> _none;
   final Set<Type> _maybe;
 
+  // Returns a copy of this matcher with provided fields changed
   EntityMatcher copyWith(
           {List<Type> all,
           List<Type> none,
@@ -221,6 +223,7 @@ class EntityMatcher {
           any: any ?? _any.toList(),
           maybe: maybe ?? _maybe.toList());
 
+  // Returns a copy of this matcher with provided fields extended
   EntityMatcher extend(
           {List<Type> all,
           List<Type> none,
@@ -278,7 +281,7 @@ class EntityMatcher {
               _none.difference(other._none).isEmpty) &&
           _maybe.difference(other._maybe).isEmpty;
 
-  /// Different matchers with same `all`, `any`, `none` need to return equal hash code.
+  /// Different matchers with same `all`, `any`, `none`, `maybe` need to return equal hash code.
   @override
   int get hashCode {
     final a = _all.fold(0, (sum, t) => t.hashCode ^ sum);
